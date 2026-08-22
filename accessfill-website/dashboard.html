@@ -209,23 +209,29 @@
 
 <div id="af-footer"></div>
 
+<script src="supabase-web.js"></script>
 <script src="shared.js"></script>
 <script>
-  (function pageInit() {
-    // Guard: must be logged in + onboarded
-    if (window.AF.guardAuth('dashboard')) return;
+  (async function pageInit() {
+    if (await window.AF.guardAuth('dashboard')) return;
 
-    // Render chrome
+    let name = 'Friend';
+    const client = window.AccessFillSupabase;
+    if (client) {
+      if (!client.isDemoMode) {
+        try {
+          await client.fetchFullUserProfileRLS();
+        } catch (_) {}
+      }
+      name = client.getDisplayName() || 'Friend';
+    }
+
     window.AF.renderHeader('dashboard');
     window.AF.renderFooter();
 
-    // Personalize welcome heading with stored name
-    const session = window.AF.getSession();
-    const name = session && session.name ? session.name : 'Friend';
     const h = document.getElementById('welcome-heading');
     if (h) h.textContent = 'Welcome back, ' + name;
 
-    // Wire Fill Application button to jump to voice flow
     const fillBtn = document.getElementById('btn-fill-app');
     if (fillBtn) {
       fillBtn.addEventListener('click', () => {

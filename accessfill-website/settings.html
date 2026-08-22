@@ -322,10 +322,11 @@
 
 <div id="af-footer"></div>
 
+<script src="supabase-web.js"></script>
 <script src="shared.js"></script>
 <script>
-  (function pageInit() {
-    if (window.AF.guardAuth('settings')) return;
+  (async function pageInit() {
+    if (await window.AF.guardAuth('settings')) return;
     window.AF.renderHeader('settings');
     window.AF.renderFooter();
 

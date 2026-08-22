@@ -94,7 +94,18 @@
           <span class="material-symbols-outlined text-on-primary-container text-[32px]" style="font-variation-settings: 'FILL' 1;">featured_seasonal_and_gifts</span>
         </div>
         <h1 class="font-headline-lg text-headline-lg text-on-surface">AccessFill</h1>
-        <p class="font-body-md text-body-md text-on-surface-variant">Sign in to continue to your saved forms and preferences.</p>
+        <p class="font-body-md text-body-md text-on-surface-variant">Sign in with your AccessFill account. This uses the same Supabase project as the Chrome extension.</p>
+      </div>
+
+      <div class="flex rounded-2xl border-2 border-border-soft p-1 bg-surface-low" role="tablist" aria-label="Account">
+        <button type="button" id="tab-signin" role="tab" aria-selected="true"
+                class="flex-1 min-h-touch-target rounded-xl font-label-md text-label-md bg-primary text-on-primary">
+          Sign in
+        </button>
+        <button type="button" id="tab-signup" role="tab" aria-selected="false"
+                class="flex-1 min-h-touch-target rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high">
+          Create account
+        </button>
       </div>
 
       <!-- Error banner -->
@@ -107,11 +118,18 @@
         </div>
       </div>
 
+      <div id="login-info"
+           class="hidden rounded-2xl border-2 border-consent/40 bg-consent-container p-5 flex items-start gap-4"
+           role="status" aria-live="polite">
+        <span class="material-symbols-outlined text-on-consent-container text-[28px]" style="font-variation-settings: 'FILL' 1;">info</span>
+        <p class="font-label-md text-label-md text-on-consent-container" id="login-info-text"></p>
+      </div>
+
       <!-- Form -->
       <form id="login-form" class="flex flex-col gap-5" novalidate>
-        <div class="flex flex-col gap-3">
+        <div id="name-field-wrap" class="flex flex-col gap-3 hidden">
           <label for="login-name" class="font-label-md text-label-md text-on-surface">Your name</label>
-          <input id="login-name" name="name" type="text" autocomplete="name" required
+          <input id="login-name" name="name" type="text" autocomplete="name"
                  placeholder="e.g. Punith"
                  class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/70 focus:border-[3px] focus:border-primary focus:outline-none focus:shadow-focus-ring transition-colors"/>
         </div>
@@ -141,14 +159,14 @@
         </div>
 
         <label class="flex items-center gap-4 cursor-pointer py-2 select-none">
-          <input type="checkbox" id="remember-me"
+          <input type="checkbox" id="remember-me" checked
                  class="w-7 h-7 rounded-lg border-2 border-outline-variant bg-surface-low text-primary accent-primary focus:outline-none focus:shadow-focus-ring"/>
           <span class="font-body-md text-body-md text-on-surface">Keep me signed in on this device</span>
         </label>
 
         <button type="submit" id="login-submit"
                 class="min-h-[64px] w-full rounded-2xl bg-primary hover:bg-surface-tint focus:shadow-focus-ring text-on-primary transition-colors px-8 py-4 flex items-center justify-center gap-3 font-headline-sm text-headline-sm shadow-card focus:outline-none">
-          <span>Sign in</span>
+          <span id="login-submit-label">Sign in</span>
           <span class="material-symbols-outlined text-[28px]">arrow_forward</span>
         </button>
       </form>
@@ -173,17 +191,19 @@
           Continue with Google
         </button>
         <button type="button" id="demo-login"
-                class="min-h-touch-target w-full rounded-xl border-2 border-primary/50 bg-primary-container text-on-primary-container hover:bg-primary-container/70 focus:shadow-focus-ring transition-colors flex items-center justify-center gap-4 font-label-md text-label-md focus:outline-none">
-          <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
-          Quick demo — no password
+                class="min-h-touch-target w-full rounded-xl border-2 border-on-info-container/30 bg-info-container text-on-info-container hover:bg-info-container/80 focus:shadow-focus-ring transition-colors flex flex-col items-center justify-center gap-1 font-label-md text-label-md focus:outline-none py-4">
+          <span class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">science</span>
+            Try demo mode (mock profile)
+          </span>
+          <span class="text-[14px] font-body-md font-normal opacity-90">Not a real account — no password, no saved data</span>
         </button>
       </div>
 
-      <!-- Sign up -->
       <div class="text-center pt-2">
-        <p class="font-body-md text-body-md text-on-surface-variant">
+        <p class="font-body-md text-body-md text-on-surface-variant" id="auth-switch-hint">
           New to AccessFill?
-          <a href="#" class="text-primary font-label-md text-label-md underline-offset-4 hover:underline">Create an account</a>
+          <button type="button" id="goto-signup" class="text-primary font-label-md text-label-md underline-offset-4 hover:underline bg-transparent border-0 cursor-pointer p-0">Create an account</button>
         </p>
       </div>
 
@@ -200,20 +220,58 @@
     </div>
   </main>
 
+  <script src="supabase-web.js"></script>
   <script src="shared.js"></script>
   <script>
-    (function wireLogin() {
+    (async function wireLogin() {
+      if (await window.AF.guardAuth('login')) return;
+
       const form = document.getElementById('login-form');
       const errEl = document.getElementById('login-error');
       const errText = document.getElementById('login-error-text');
+      const infoEl = document.getElementById('login-info');
+      const infoText = document.getElementById('login-info-text');
+      const nameWrap = document.getElementById('name-field-wrap');
       const nameInput = document.getElementById('login-name');
       const emailInput = document.getElementById('login-email');
       const pwInput = document.getElementById('login-password');
+      const rememberEl = document.getElementById('remember-me');
       const submitBtn = document.getElementById('login-submit');
+      const submitLabel = document.getElementById('login-submit-label');
       const demoBtn = document.getElementById('demo-login');
       const googleBtn = document.getElementById('google-login');
+      const tabSignIn = document.getElementById('tab-signin');
+      const tabSignUp = document.getElementById('tab-signup');
+      const gotoSignup = document.getElementById('goto-signup');
+      const switchHint = document.getElementById('auth-switch-hint');
 
-      // Show/hide password
+      let mode = 'signin';
+
+      const tabOn = 'flex-1 min-h-touch-target rounded-xl font-label-md text-label-md bg-primary text-on-primary';
+      const tabOff = 'flex-1 min-h-touch-target rounded-xl font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high';
+
+      function setMode(next) {
+        mode = next;
+        const signup = next === 'signup';
+        tabSignIn.className = signup ? tabOff : tabOn;
+        tabSignUp.className = signup ? tabOn : tabOff;
+        tabSignIn.setAttribute('aria-selected', signup ? 'false' : 'true');
+        tabSignUp.setAttribute('aria-selected', signup ? 'true' : 'false');
+        nameWrap.classList.toggle('hidden', !signup);
+        nameInput.required = signup;
+        pwInput.autocomplete = signup ? 'new-password' : 'current-password';
+        submitLabel.textContent = signup ? 'Create account' : 'Sign in';
+        switchHint.innerHTML = signup
+          ? 'Already have an account? <button type="button" id="goto-signin" class="text-primary font-label-md text-label-md underline-offset-4 hover:underline bg-transparent border-0 cursor-pointer p-0">Sign in</button>'
+          : 'New to AccessFill? <button type="button" id="goto-signup" class="text-primary font-label-md text-label-md underline-offset-4 hover:underline bg-transparent border-0 cursor-pointer p-0">Create an account</button>';
+        const other = document.getElementById(signup ? 'goto-signin' : 'goto-signup');
+        if (other) other.addEventListener('click', () => setMode(signup ? 'signin' : 'signup'));
+      }
+
+      tabSignIn.addEventListener('click', () => setMode('signin'));
+      tabSignUp.addEventListener('click', () => setMode('signup'));
+      gotoSignup.addEventListener('click', () => setMode('signup'));
+
       const togglePw = document.getElementById('toggle-pw');
       const togglePwIcon = document.getElementById('toggle-pw-icon');
       togglePw.addEventListener('click', () => {
@@ -224,45 +282,80 @@
       });
 
       function showError(msg) {
+        infoEl.classList.add('hidden');
         errText.textContent = msg || 'Please check your details and try again.';
         errEl.classList.remove('hidden');
       }
       function hideError() {
         errEl.classList.add('hidden');
       }
-
-      function doLogin(name, email) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = `<span class="font-headline-sm text-headline-sm">Signing you in…</span>
-          <span class="material-symbols-outlined text-[24px] animate-pulse">progress_activity</span>`;
-        hideError();
-        setTimeout(() => {
-          const nextPageKey = window.AF.login({ name, email });
-          // Shared.js PAGES values are relative to stitch root; resolve via AF.url.
-          location.href = window.AF.url(nextPageKey);
-        }, 500);
+      function showInfo(msg) {
+        errEl.classList.add('hidden');
+        infoText.textContent = msg;
+        infoEl.classList.remove('hidden');
       }
 
-      form.addEventListener('submit', (e) => {
+      function setBusy(busy, label) {
+        submitBtn.disabled = busy;
+        demoBtn.disabled = busy;
+        if (busy) {
+          submitBtn.innerHTML = `<span class="font-headline-sm text-headline-sm">${label || 'Please wait…'}</span>
+            <span class="material-symbols-outlined text-[24px] animate-pulse">progress_activity</span>`;
+        } else {
+          submitBtn.innerHTML = `<span id="login-submit-label">${mode === 'signup' ? 'Create account' : 'Sign in'}</span>
+            <span class="material-symbols-outlined text-[28px]">arrow_forward</span>`;
+        }
+      }
+
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = nameInput.value.trim();
         const email = emailInput.value.trim();
         const pw = pwInput.value;
+        const remember = rememberEl.checked;
 
-        if (!name) { showError('Please enter your name.'); nameInput.focus(); return; }
+        if (mode === 'signup' && !name) { showError('Please enter your name.'); nameInput.focus(); return; }
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showError('Please enter a valid email address.'); emailInput.focus(); return; }
         if (!pw || pw.length < 6) { showError('Password must be at least 6 characters.'); pwInput.focus(); return; }
 
         hideError();
-        doLogin(name, email);
+        setBusy(true, mode === 'signup' ? 'Creating your account…' : 'Signing you in…');
+
+        const result = await window.AF.login({
+          name, email, password: pw, remember,
+          mode: mode === 'signup' ? 'signup' : 'signin',
+        });
+
+        if (!result.success) {
+          setBusy(false);
+          showError(result.error || 'Sign in failed. Please try again.');
+          return;
+        }
+
+        if (result.needsConfirmation) {
+          setBusy(false);
+          setMode('signin');
+          showInfo(result.message || 'Check your email for a confirmation link, then sign in.');
+          return;
+        }
+
+        location.href = window.AF.url(result.next || 'dashboard.html');
       });
 
-      demoBtn.addEventListener('click', () => {
-        doLogin('Demo User', 'demo@accessfill.app');
+      demoBtn.addEventListener('click', async () => {
+        hideError();
+        setBusy(true, 'Starting demo…');
+        const result = await window.AF.login({ mode: 'demo' });
+        if (!result.success) {
+          setBusy(false);
+          showError(result.error || 'Could not start demo mode.');
+          return;
+        }
+        location.href = window.AF.url(result.next || 'dashboard.html');
       });
 
       googleBtn.addEventListener('click', () => {
-        doLogin('Google User', 'google@accessfill.app');
+        showError('Google sign-in is not available yet. Please use email and password, or try demo mode.');
       });
     })();
   </script>

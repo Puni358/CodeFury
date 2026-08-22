@@ -87,6 +87,11 @@ body.no-anim .group-hover\:scale-110:hover { transform: none !important; }
 /* ---------- Accessibility preference: SIMPLIFIED UI ---------- */
 html[data-simplified-ui="on"] .simplified-hide { display: none !important; }
 
+/* Demo-mode mock session: extra space for the fixed demo banner above the nav */
+html[data-demo-mode="true"] main {
+  padding-top: 8.5rem !important;
+}
+
 /* ---------- Accessibility preference: HIGH / EXTRA-HIGH CONTRAST ---------- */
 /* Our default palette is already high-contrast — these modes push it even higher. */
 html[data-contrast="high"] {

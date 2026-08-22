@@ -1,16 +1,10 @@
 /* ================================================================
    AccessFill — shared.js
-   Frontend-only state, persistence, navigation, and page guards.
-   Keys (all localStorage):
-     af_session         → { name, email, firstLogin:bool }  or null if logged out
-     af_onboarded       → 'true' if user completed onboarding
-     af_profiles        → array of selected accessibility profile slugs (from onboarding cards)
-     af_prefs_fontSize  → small | medium | large | xlarge
-     af_prefs_contrast  → normal | high | extra-high
-     af_prefs_language  → en | hi | kn
-     af_prefs_voice     → 'on' | 'off'
-     af_animations      → 'on' | 'off'        (Animations toggle)
-     af_simplified      → 'on' | 'off'        (Simplified UI toggle)
+   Navigation, page guards, preferences, and chrome.
+   Auth is owned by supabase-web.js (AccessFillSupabase):
+     real session → localStorage/sessionStorage keys af_supabase_session
+     demo mode   → af_is_demo_mode + mock token (never a live JWT)
+   Accessibility prefs remain in localStorage (af_prefs_*, etc.).
 ================================================================= */
 
 (function () {
@@ -25,7 +19,6 @@
     voiceFlow:   'voice-guidance.html',
   };
 
-  // Resolve a page key to a URL relative to the flat folder (all files live side-by-side).
   function url(pageKey) {
     const base = document.currentScript && document.currentScript.src
       ? new URL('.', new URL(document.currentScript.src)).pathname
@@ -56,78 +49,145 @@
     try { localStorage.setItem(key, JSON.stringify(val)); } catch (_) {}
   }
 
-  /* ---------- Auth ---------- */
-  function getSession()      { return readJSON('af_session', null); }
-  function isLoggedIn()      { return !!getSession(); }
-  function isOnboarded()     { return read('af_onboarded', 'false') === 'true'; }
-  function login({ name, email }) {
-    const existing = getSession();
-    const firstLogin = !existing;
-    writeJSON('af_session', { name: name || 'Friend', email: email || '', firstLogin });
-    // First-time loginers go to onboarding; returning users skip to dashboard.
-    return firstLogin ? PAGES.onboarding : PAGES.dashboard;
+  function sb() {
+    return window.AccessFillSupabase || null;
   }
-  function logout() {
+
+  function currentUserId() {
+    const client = sb();
+    if (client && client.session && client.session.user && client.session.user.id) {
+      return client.session.user.id;
+    }
+    return 'anon';
+  }
+
+  function onboardKey() {
+    return 'af_onboarded_' + currentUserId();
+  }
+
+  /* ---------- Auth (backed by AccessFillSupabase after init) ---------- */
+  function getSession() {
+    const client = sb();
+    if (!client || !client.session) return null;
+    const profile = client.profile || {};
+    const user = client.session.user || {};
+    const meta = user.user_metadata || {};
+    return {
+      name: profile.full_name || meta.full_name || user.email || 'Friend',
+      email: profile.email || user.email || '',
+      user: user,
+      profile: profile,
+      isDemoMode: !!client.isDemoMode,
+    };
+  }
+
+  function isLoggedIn() {
+    const client = sb();
+    return !!(client && client.session && client.session.access_token);
+  }
+
+  function isDemoMode() {
+    const client = sb();
+    return !!(client && client.isDemoMode);
+  }
+
+  function isOnboarded() {
+    return read(onboardKey(), 'false') === 'true';
+  }
+
+  function afterAuth(result, { isNewUser } = {}) {
+    if (!result || !result.success || result.needsConfirmation) return null;
+    if (isNewUser || result.isNewUser || !isOnboarded()) return PAGES.onboarding;
+    return PAGES.dashboard;
+  }
+
+  async function login({ name, email, password, remember, mode }) {
+    const client = sb();
+    if (!client) return { success: false, error: 'Auth client not loaded.' };
+
+    if (mode === 'demo') {
+      const result = await client.signInDemo();
+      return Object.assign({ next: afterAuth(result, { isNewUser: !isOnboarded() }) }, result);
+    }
+
+    if (mode === 'signup') {
+      const result = await client.signUp(email, password, name || '', { remember: remember !== false });
+      return Object.assign({ next: afterAuth(result, { isNewUser: true }) }, result);
+    }
+
+    const result = await client.signInWithPassword(email, password, { remember: remember !== false });
+    return Object.assign({ next: afterAuth(result) }, result);
+  }
+
+  async function logout() {
+    const client = sb();
+    if (client) await client.signOut();
     try {
       localStorage.removeItem('af_session');
-      // Keep preferences (font/contrast/language) — only drop session + onboarding flag
-      // so the user can pick back up if they log in again. But clear profiles
-      // so onboarding re-prompts cleanly on a fresh login.
       localStorage.removeItem('af_profiles');
-      localStorage.removeItem('af_onboarded');
     } catch (_) {}
     return PAGES.login;
   }
+
   function completeOnboarding(selectedProfiles) {
     if (Array.isArray(selectedProfiles)) writeJSON('af_profiles', selectedProfiles);
+    write(onboardKey(), 'true');
     write('af_onboarded', 'true');
     return PAGES.dashboard;
   }
 
+  async function ensureAuthInit() {
+    const client = sb();
+    if (client) await client.init();
+  }
+
   /* ---------- Preferences (applied on every page load) ---------- */
   function applyPreferences() {
-    // Animations
-    const userAnim = read('af_animations', null); // null = not explicitly set by user yet
+    const userAnim = read('af_animations', null);
     const osReduces = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const animOff = (userAnim === 'off') || (userAnim == null && osReduces);
-    document.body.classList.toggle('no-anim', animOff);
+    if (document.body) document.body.classList.toggle('no-anim', animOff);
     document.documentElement.setAttribute('data-animations', animOff ? 'off' : 'on');
 
-    // Font size → scale the html font-size rem base, plus tag body
     const fs = read('af_prefs_fontSize', 'medium');
     const remBySize = { small: '16px', medium: '18px', large: '21px', xlarge: '24px' };
     document.documentElement.style.fontSize = remBySize[fs] || remBySize.medium;
     document.documentElement.setAttribute('data-font-size', fs);
 
-    // Contrast
     const c = read('af_prefs_contrast', 'normal');
     document.documentElement.setAttribute('data-contrast', c);
 
-    // Language (store only — real i18n needs backend; useful for downstream)
     document.documentElement.setAttribute('lang', read('af_prefs_language', 'en'));
 
-    // Simplified UI
     const simp = read('af_simplified', 'off');
     document.documentElement.setAttribute('data-simplified-ui', simp);
 
-    // Voice flag (stored, for downstream consumers)
     document.documentElement.setAttribute('data-voice-guidance', read('af_prefs_voice', 'off'));
+    document.documentElement.setAttribute('data-demo-mode', isDemoMode() ? 'true' : 'false');
   }
 
-  /* ---------- Guard: pages that need auth call guardAuth(<currentPageKey>) ---------- */
+  /* ---------- Guard: pages that need auth call await guardAuth(<currentPageKey>) ---------- */
   const PUBLIC_PAGES = new Set(['login', 'root']);
-  function guardAuth(currentPageKey) {
-    if (PUBLIC_PAGES.has(currentPageKey)) return;
+  async function guardAuth(currentPageKey) {
+    await ensureAuthInit();
+    applyPreferences();
+
+    if (PUBLIC_PAGES.has(currentPageKey)) {
+      if (currentPageKey === 'login' && isLoggedIn()) {
+        location.replace(url(isOnboarded() ? 'dashboard' : 'onboarding'));
+        return true;
+      }
+      return false;
+    }
+
     if (!isLoggedIn()) {
       location.replace(url('login') + '?next=' + encodeURIComponent(currentPageKey));
       return true;
     }
-    // Onboarding guard: logged-in but not onboarded → route to onboarding once.
     if (currentPageKey !== 'onboarding' && !isOnboarded()) {
       location.replace(url('onboarding'));
       return true;
     }
-    // If onboarded user somehow landed on onboarding again → skip to dashboard.
     if (currentPageKey === 'onboarding' && isOnboarded()) {
       location.replace(url('dashboard'));
       return true;
@@ -135,7 +195,6 @@
     return false;
   }
 
-  /* ---------- Consent/sensitive confirmation flag (used by voice flow tooltip) ---------- */
   function markConsentSeen(fieldId) {
     const key = 'af_consent_' + (fieldId || 'global');
     const n = Number(read(key, '0')) + 1;
@@ -143,7 +202,6 @@
     return n;
   }
 
-  /* ---------- Helpers used by Settings + Onboarding submit handlers ---------- */
   function savePrefs(patch) {
     if ('fontSize'  in patch) write('af_prefs_fontSize', patch.fontSize);
     if ('contrast'  in patch) write('af_prefs_contrast', patch.contrast);
@@ -167,7 +225,6 @@
     };
   }
 
-  /* ---------- Read a URL query param ---------- */
   function qs(name, fallback) {
     try {
       const u = new URL(location.href);
@@ -176,20 +233,25 @@
     } catch (_) { return fallback; }
   }
 
-  /* ---------- Nav header/footer renderer.
-     A page drops <div id="af-header" data-page="dashboard"></div> and this fills it.
-     Keeps every page's top nav identical without duplicating markup.
-  ------------------------------------------------------------------ */
   function renderHeader(pageKey) {
     const el = document.getElementById('af-header');
     if (!el) return;
-    const session = getSession() || { name: 'Guest' };
+    const session = getSession() || { name: 'Guest', isDemoMode: false };
+    const displayName = (sb() && sb().getDisplayName && sb().getDisplayName()) || session.name || 'Guest';
+    const demo = isDemoMode();
     const pageClass = (k) => pageKey === k
       ? 'min-h-touch-target min-w-[120px] flex items-center justify-center px-6 rounded-xl text-primary font-bold bg-primary-container'
       : 'text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors min-h-touch-target min-w-[120px] flex items-center justify-center px-6 rounded-xl';
 
+    const demoBadge = demo
+      ? `<span class="af-demo-badge inline-flex items-center gap-1.5 rounded-full border-2 border-on-info-container/20 bg-info-container px-3 py-1 text-[12px] font-bold tracking-wide text-on-info-container uppercase">Demo mode</span>`
+      : '';
+
+    const signedInLabel = demo ? 'Mock profile' : 'Signed in';
+
     el.outerHTML = `
 <header class="fixed top-0 w-full z-50 bg-surface-low/95 backdrop-blur-sm border-b-2 border-border-soft">
+  ${demo ? `<div class="af-demo-banner w-full bg-info-container border-b-2 border-on-info-container/15 text-on-info-container text-center font-label-md text-[14px] py-2 px-4">Demo mode — this is mock data, not a real AccessFill account.</div>` : ''}
   <div class="h-20 max-w-max-width mx-auto px-gutter flex items-center justify-between">
     <div class="flex items-center gap-4">
       <a href="${url('dashboard')}" class="flex items-center gap-4 no-underline">
@@ -198,6 +260,7 @@
         </div>
         <span class="font-headline-md text-headline-md text-on-surface">AccessFill</span>
       </a>
+      ${demoBadge}
     </div>
     <nav class="hidden md:flex items-center gap-4">
       <a class="${pageClass('dashboard')}"  href="${url('dashboard')}">Dashboard</a>
@@ -206,8 +269,8 @@
     </nav>
     <div class="flex items-center gap-3">
       <div class="hidden sm:flex flex-col items-end leading-tight mr-2 simplified-hide">
-        <span class="font-label-md text-label-md text-on-surface">${escapeHtml(session.name)}</span>
-        <span class="text-[14px] text-on-surface-variant">Signed in</span>
+        <span class="font-label-md text-label-md text-on-surface">${escapeHtml(displayName)}</span>
+        <span class="text-[14px] text-on-surface-variant">${signedInLabel}</span>
       </div>
       <div class="w-11 h-11 rounded-full border-2 border-outline-variant bg-surface-container flex items-center justify-center" aria-label="Profile">
         <span class="material-symbols-outlined text-on-surface-variant text-[24px]">person</span>
@@ -221,8 +284,8 @@
   </div>
 </header>`;
 
-    document.getElementById('af-logout-btn').addEventListener('click', () => {
-      const next = logout();
+    document.getElementById('af-logout-btn').addEventListener('click', async () => {
+      const next = await logout();
       location.replace(url(next));
     });
   }
@@ -247,14 +310,12 @@
 </footer>`;
   }
 
-  /* ---------- tiny string escape for innerHTML user strings ---------- */
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  /* ---------- Wire OS-level reduce-motion live changes into body.no-anim ---------- */
   function wireMotionMQ() {
     if (!window.matchMedia) return;
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -263,23 +324,17 @@
     else if (mql.addListener) mql.addListener(onChange);
   }
 
-  /* ---------- Public API: window.AF ---------- */
   window.AF = {
     PAGES, url,
-    // auth
-    getSession, isLoggedIn, isOnboarded, login, logout, completeOnboarding,
-    // prefs
+    getSession, isLoggedIn, isOnboarded, isDemoMode, login, logout, completeOnboarding,
+    ensureAuthInit,
     applyPreferences, savePrefs, readPrefs,
-    // guards / rendering
     guardAuth, renderHeader, renderFooter,
-    // misc
     markConsentSeen, qs, escapeHtml,
     wireMotionMQ,
   };
 })();
 
-/* Auto-apply preferences as soon as this script loads (before DOMContentLoaded is fine;
-   body may not exist yet for no-anim toggling, so we also re-apply at DOMContentLoaded). */
 (function autoApply() {
   function run() {
     window.AF.applyPreferences();

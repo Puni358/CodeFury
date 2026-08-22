@@ -220,16 +220,16 @@
 
 <div id="af-footer"></div>
 
+<script src="supabase-web.js"></script>
 <script src="shared.js"></script>
 <script>
-  (function pageInit() {
-    if (window.AF.guardAuth('voiceFlow')) return;
+  (async function pageInit() {
+    if (await window.AF.guardAuth('voiceFlow')) return;
     window.AF.renderHeader('voiceFlow');
     window.AF.renderFooter();
 
-    // Personalize with session name if available for demo purposes
-    const session = window.AF.getSession();
-    const name = session && session.name ? session.name : 'Punith';
+    const client = window.AccessFillSupabase;
+    const name = (client && client.getDisplayName && client.getDisplayName()) || 'Punith';
     const confirmedEl = document.getElementById('confirmed-value');
     const savedLabelEl = document.getElementById('saved-label');
     if (confirmedEl) confirmedEl.textContent = name;

@@ -186,11 +186,11 @@
 
 <div id="af-footer"></div>
 
+<script src="supabase-web.js"></script>
 <script src="shared.js"></script>
 <script>
-  (function pageInit() {
-    // Guard: must be logged in + not yet onboarded (shared.js handles redirect logic)
-    if (window.AF.guardAuth('onboarding')) return;
+  (async function pageInit() {
+    if (await window.AF.guardAuth('onboarding')) return;
 
     // Render chrome (pass a pageKey that isn't in nav — header will render nav links but none active)
     window.AF.renderHeader(null);

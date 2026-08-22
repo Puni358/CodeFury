@@ -4,14 +4,14 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>AccessFill — Accessibility-first form assistance</title>
+  <script src="supabase-web.js"></script>
   <script src="shared.js"></script>
   <script>
-    (function rootRedirect() {
+    (async function rootRedirect() {
       try {
-        const loggedIn = localStorage.getItem('af_session') != null;
-        const onboarded = localStorage.getItem('af_onboarded') === 'true';
-        if (loggedIn) {
-          location.replace(onboarded ? 'dashboard.html' : 'onboarding.html');
+        await window.AF.ensureAuthInit();
+        if (window.AF.isLoggedIn()) {
+          location.replace(window.AF.isOnboarded() ? 'dashboard.html' : 'onboarding.html');
         } else {
           location.replace('login.html');
         }
