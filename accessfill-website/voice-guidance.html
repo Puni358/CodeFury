@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Voice Fill — AccessFill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#FAF8F3",
+            "surface": "#FFFFFF",
+            "surface-low": "#FDFBF6",
+            "surface-container": "#FFFBF4",
+            "surface-container-high": "#F5F1E8",
+            "on-surface": "#1F2937",
+            "on-surface-variant": "#4B5563",
+            "outline": "#9CA3AF",
+            "outline-variant": "#D6D3CB",
+            "border-soft": "#E5E1D8",
+
+            "primary": "#1A4D6B",
+            "on-primary": "#FFFFFF",
+            "primary-container": "#D6E6EE",
+            "on-primary-container": "#0B2C42",
+            "focus-indicator": "#1A4D6B",
+            "surface-tint": "#236389",
+
+            "destructive": "#8B2635",
+            "on-destructive": "#FFFFFF",
+            "destructive-container": "#F5D9DE",
+            "on-destructive-container": "#5C1420",
+
+            "consent": "#2D6A4F",
+            "on-consent": "#FFFFFF",
+            "consent-container": "#D4E7DB",
+            "on-consent-container": "#183B2A",
+            "consent-glow": "rgba(45,106,79,0.12)",
+
+            "info-container": "#E6E0D3",
+            "on-info-container": "#3B3325",
+            "draft-container": "#DBE3EC",
+            "on-draft-container": "#1F3347",
+            "upload-container": "#EDE0D5",
+            "on-upload-container": "#4A2E19"
+          },
+          "borderRadius": {
+            "DEFAULT": "8px",
+            "lg": "12px",
+            "xl": "16px",
+            "2xl": "20px",
+            "3xl": "28px",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "28px",
+            "touch-target": "56px",
+            "margin-desktop": "72px",
+            "max-width": "1200px",
+            "stack-gap": "16px"
+          },
+          "fontFamily": {
+            "body-lg": ["Atkinson Hyperlegible Next"],
+            "headline-md": ["Atkinson Hyperlegible Next"],
+            "body-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg": ["Atkinson Hyperlegible Next"],
+            "label-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg-mobile": ["Atkinson Hyperlegible Next"],
+            "label-lg": ["Atkinson Hyperlegible Next"],
+            "headline-xl": ["Atkinson Hyperlegible Next"]
+          },
+          "fontSize": {
+            "body-lg": ["22px", {"lineHeight": "36px", "fontWeight": "500"}],
+            "headline-md": ["30px", {"lineHeight": "40px", "fontWeight": "700"}],
+            "body-md": ["20px", {"lineHeight": "32px", "fontWeight": "500"}],
+            "headline-lg": ["44px", {"lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "label-md": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "headline-lg-mobile": ["36px", {"lineHeight": "44px", "fontWeight": "700"}],
+            "label-lg": ["20px", {"lineHeight": "30px", "letterSpacing": "0.01em", "fontWeight": "700"}],
+            "headline-xl": ["52px", {"lineHeight": "64px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+          },
+          "boxShadow": {
+            "card": "0 1px 2px rgba(31,41,55,0.04), 0 0 0 2px #E5E1D8",
+            "modal": "0 2px 10px rgba(31,41,55,0.06), 0 0 0 2px #E5E1D8",
+            "focus-ring": "0 0 0 4px rgba(26,77,107,0.25)",
+            "consent-ring": "0 0 0 4px rgba(45,106,79,0.25)",
+            "consent-card": "0 4px 24px rgba(45,106,79,0.10), 0 0 0 3px #2D6A4F"
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="shared.css" rel="stylesheet"/>
+</head>
+<body class="bg-background font-body-md text-on-surface min-h-screen antialiased flex flex-col">
+
+<div id="af-header" data-page="voiceFlow"></div>
+
+<main class="w-full pt-20 pb-margin-desktop flex-1">
+  <div class="max-w-max-width mx-auto px-gutter">
+    <div class="flex flex-col w-full h-[640px] items-center justify-center relative">
+
+      <div class="w-full max-w-2xl bg-surface shadow-modal rounded-3xl relative z-10 flex flex-col p-10 min-h-[460px] border-2 border-border-soft">
+
+        <!-- Header / Progress -->
+        <div class="flex flex-col items-center mb-10 w-full" id="progress-header">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="w-8 h-8 rounded-lg bg-primary-container border-2 border-primary-container flex items-center justify-center">
+              <span class="material-symbols-outlined text-on-primary-container text-[18px]" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+            </span>
+            <p class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wide" id="progress-text">Field 1 of 6</p>
+          </div>
+          <div class="w-full h-3 bg-border-soft rounded-full overflow-hidden">
+            <div class="h-full bg-primary rounded-full transition-all duration-500 ease-out" id="progress-bar" style="width: 16%;"></div>
+          </div>
+        </div>
+
+        <!-- State Container -->
+        <div class="flex-1 flex flex-col items-center justify-center w-full relative" id="state-container">
+
+          <!-- STATE A: Prompt (calm, inviting) -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-100 z-10" id="state-a">
+            <div class="w-16 h-16 rounded-2xl bg-primary-container flex items-center justify-center border-2 border-primary-container mb-8">
+              <span class="material-symbols-outlined text-on-primary-container text-[36px]" style="font-variation-settings: 'FILL' 1;">help_center</span>
+            </div>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface text-center mb-10" id="prompt-title">What is your name?</h2>
+            <button class="w-28 h-28 rounded-3xl bg-primary flex items-center justify-center text-on-primary hover:bg-surface-tint focus:shadow-focus-ring transition-colors shadow-card group focus:outline-none" onclick="transitionTo('state-b')" aria-label="Tap to speak">
+              <span class="material-symbols-outlined text-[52px] group-hover:scale-105 transition-transform">mic</span>
+            </button>
+            <p class="mt-6 font-body-md text-body-md text-on-surface-variant">Tap to speak</p>
+          </div>
+
+          <!-- STATE B: Listening -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-0 pointer-events-none z-0" id="state-b">
+            <div class="flex items-center gap-3 mb-8">
+              <span class="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
+              <p class="font-label-lg text-label-lg text-primary uppercase tracking-wide">Listening</p>
+            </div>
+            <div class="relative w-40 h-40 flex items-center justify-center mb-6">
+              <span class="absolute inset-0 rounded-full bg-primary/35 mic-pulse-ring"></span>
+              <span class="absolute inset-2 rounded-full bg-primary/20 mic-pulse-ring-2"></span>
+              <button class="relative z-10 w-28 h-28 rounded-3xl bg-primary flex items-center justify-center text-on-primary shadow-card focus:outline-none" onclick="transitionTo('state-c')" aria-label="Listening — tap when done">
+                <span class="material-symbols-outlined text-[48px] mic-bounce" style="font-variation-settings: 'FILL' 1;">graphic_eq</span>
+              </button>
+            </div>
+            <div class="bar-wave flex gap-2 h-10 items-end mt-2">
+              <div class="w-2 bg-primary rounded-full" style="height: 40%;"></div>
+              <div class="w-2 bg-primary rounded-full" style="height: 70%;"></div>
+              <div class="w-2 bg-primary rounded-full" style="height: 90%;"></div>
+              <div class="w-2 bg-primary rounded-full" style="height: 60%;"></div>
+              <div class="w-2 bg-primary rounded-full" style="height: 40%;"></div>
+            </div>
+            <p class="mt-6 font-body-md text-body-md text-on-surface-variant">Speak clearly. Tap again when done.</p>
+          </div>
+
+          <!-- STATE C: Transcribing -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-0 pointer-events-none z-0" id="state-c">
+            <div class="w-18 h-18 rounded-2xl bg-primary-container border-2 border-primary-container flex items-center justify-center mb-8 p-5">
+              <svg class="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75 animate-spin" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+              </svg>
+            </div>
+            <h2 class="font-headline-md text-headline-md text-on-surface text-center">Got it, one moment…</h2>
+          </div>
+
+          <!-- STATE D: CONSENT / CONFIRMATION -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-400 opacity-0 pointer-events-none z-0" id="state-d">
+            <div class="flex items-center gap-3 mb-6">
+              <span class="w-10 h-10 rounded-xl bg-consent border-2 border-consent flex items-center justify-center shadow-card">
+                <span class="material-symbols-outlined text-on-consent text-[22px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+              </span>
+              <p class="font-label-lg text-label-lg text-consent uppercase tracking-wider">Please confirm before we continue</p>
+            </div>
+
+            <p class="font-body-lg text-body-lg text-on-surface-variant mb-5">Did you say:</p>
+
+            <div class="relative w-full bg-surface-low border-[3px] border-consent rounded-3xl pt-14 pb-12 px-10 shadow-consent-card mb-10">
+              <button class="absolute -top-5 -right-5 w-14 h-14 rounded-2xl bg-consent hover:bg-consent/90 focus:shadow-consent-ring text-on-consent flex items-center justify-center shadow-card transition-colors focus:outline-none" aria-label="Edit what I said" title="Edit" onclick="transitionTo('state-a')">
+                <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 0;">edit</span>
+              </button>
+
+              <div class="absolute -top-6 left-8 w-12 h-12 rounded-2xl bg-consent-container border-2 border-consent-container flex items-center justify-center text-on-consent-container font-headline-xl select-none" aria-hidden="true">
+                <span style="font-size:38px; line-height:1; transform: translateY(-4px);">" </span>
+              </div>
+
+              <h2 class="font-headline-xl text-headline-xl text-on-surface text-center pt-2" id="confirmed-value">Punith</h2>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 w-full">
+              <button class="flex-1 min-h-touch-target rounded-2xl border-2 border-outline-variant bg-surface-low text-on-surface hover:bg-surface-container-high focus:shadow-focus-ring transition-colors font-label-lg text-label-lg flex items-center justify-center gap-3 focus:outline-none" onclick="transitionTo('state-a')">
+                <span class="material-symbols-outlined text-[26px]">refresh</span>
+                Try again
+              </button>
+              <button class="flex-1 min-h-touch-target rounded-2xl bg-consent hover:bg-consent/90 focus:shadow-consent-ring text-on-consent transition-colors font-label-lg text-label-lg flex items-center justify-center gap-3 shadow-card focus:outline-none" onclick="transitionTo('state-e')">
+                <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Yes, that's right
+              </button>
+            </div>
+          </div>
+
+          <!-- STATE E: Saved / Next -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-400 opacity-0 pointer-events-none z-0" id="state-e">
+            <div class="w-24 h-24 rounded-3xl bg-consent-container border-[3px] border-consent-container flex items-center justify-center mb-8">
+              <span class="material-symbols-outlined text-[56px] text-consent" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+            </div>
+            <h2 class="font-headline-md text-headline-md text-on-surface text-center mb-2" id="saved-label">Saved: Punith</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant">Moving to next field…</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="af-footer"></div>
+
+<script src="shared.js"></script>
+<script>
+  (function pageInit() {
+    if (window.AF.guardAuth('voiceFlow')) return;
+    window.AF.renderHeader('voiceFlow');
+    window.AF.renderFooter();
+
+    // Personalize with session name if available for demo purposes
+    const session = window.AF.getSession();
+    const name = session && session.name ? session.name : 'Punith';
+    const confirmedEl = document.getElementById('confirmed-value');
+    const savedLabelEl = document.getElementById('saved-label');
+    if (confirmedEl) confirmedEl.textContent = name;
+    if (savedLabelEl) savedLabelEl.textContent = 'Saved: ' + name;
+  })();
+
+  const states = ['state-a', 'state-b', 'state-c', 'state-d', 'state-e'];
+  const prompts = [
+    { title: 'What is your name?', sample: 'Punith' },
+    { title: 'What is your email address?', sample: 'punith@accessfill.app' },
+    { title: 'What is your phone number?', sample: '+91 98765 43210' },
+    { title: 'What is your date of birth?', sample: 'January 15, 1990' },
+    { title: 'What is your current address?', sample: '123 Main Street, Bengaluru' },
+    { title: 'Please share your Aadhaar number.', sample: '1234 5678 9012' }
+  ];
+  let currentField = 0;
+
+  function transitionTo(targetStateId) {
+    states.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('opacity-100', 'z-10');
+        el.classList.add('opacity-0', 'pointer-events-none', 'z-0');
+      }
+    });
+
+    const targetEl = document.getElementById(targetStateId);
+    if (targetEl) {
+      targetEl.classList.remove('opacity-0', 'pointer-events-none', 'z-0');
+      targetEl.classList.add('opacity-100', 'z-10');
+    }
+
+    if (targetStateId === 'state-c') {
+      setTimeout(() => transitionTo('state-d'), 1500);
+    } else if (targetStateId === 'state-e') {
+      setTimeout(() => {
+        currentField = (currentField + 1) % prompts.length;
+        const next = prompts[currentField];
+        const fieldIndex = currentField + 1;
+
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const promptTitle = document.getElementById('prompt-title');
+        const confirmedValue = document.getElementById('confirmed-value');
+        const savedLabel = document.getElementById('saved-label');
+
+        if (progressText) progressText.innerText = 'Field ' + fieldIndex + ' of ' + prompts.length;
+        if (progressBar) progressBar.style.width = String(Math.round((fieldIndex / prompts.length) * 100)) + '%';
+        if (promptTitle) promptTitle.innerText = next.title;
+        if (confirmedValue) confirmedValue.textContent = next.sample;
+        if (savedLabel) savedLabel.textContent = 'Saved: ' + next.sample;
+
+        transitionTo('state-a');
+      }, 2000);
+    }
+  }
+</script>
+
+</body>
+</html>

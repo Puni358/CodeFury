@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Simplified UI — AccessFill</title>
+  <script src="shared.js"></script>
+  <script>
+    (function go() {
+      try {
+        localStorage.setItem('af_simplified', 'on');
+        if (window.AF && window.AF.savePrefs) {
+          window.AF.savePrefs({ simplified: true });
+        }
+      } catch (_) {}
+      location.replace('dashboard.html');
+    })();
+  </script>
+</head>
+<body>
+  <p style="font-family:system-ui; padding: 2rem;">Enabling simplified UI and opening the dashboard. If nothing happens, <a href="dashboard.html">go to Dashboard</a>.</p>
+</body>
+</html>

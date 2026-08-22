@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Dashboard — AccessFill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#FAF8F3",
+            "surface": "#FFFFFF",
+            "surface-low": "#FDFBF6",
+            "surface-container": "#FFFBF4",
+            "surface-container-high": "#F5F1E8",
+            "on-surface": "#1F2937",
+            "on-surface-variant": "#4B5563",
+            "outline": "#9CA3AF",
+            "outline-variant": "#D6D3CB",
+            "border-soft": "#E5E1D8",
+
+            "primary": "#1A4D6B",
+            "on-primary": "#FFFFFF",
+            "primary-container": "#D6E6EE",
+            "on-primary-container": "#0B2C42",
+            "focus-indicator": "#1A4D6B",
+            "surface-tint": "#236389",
+
+            "destructive": "#8B2635",
+            "on-destructive": "#FFFFFF",
+            "destructive-container": "#F5D9DE",
+            "on-destructive-container": "#5C1420",
+
+            "consent": "#2D6A4F",
+            "on-consent": "#FFFFFF",
+            "consent-container": "#D4E7DB",
+            "on-consent-container": "#183B2A",
+
+            "info-container": "#E6E0D3",
+            "on-info-container": "#3B3325",
+            "draft-container": "#DBE3EC",
+            "on-draft-container": "#1F3347",
+            "upload-container": "#EDE0D5",
+            "on-upload-container": "#4A2E19"
+          },
+          "borderRadius": {
+            "DEFAULT": "8px",
+            "lg": "12px",
+            "xl": "16px",
+            "2xl": "20px",
+            "full": "9999px"
+          },
+          "spacing": {
+            "gutter": "28px",
+            "touch-target": "56px",
+            "margin-desktop": "72px",
+            "max-width": "1200px",
+            "stack-gap": "16px"
+          },
+          "fontFamily": {
+            "body-lg": ["Atkinson Hyperlegible Next"],
+            "headline-md": ["Atkinson Hyperlegible Next"],
+            "body-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg": ["Atkinson Hyperlegible Next"],
+            "label-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg-mobile": ["Atkinson Hyperlegible Next"]
+          },
+          "fontSize": {
+            "body-lg": ["22px", {"lineHeight": "36px", "fontWeight": "500"}],
+            "headline-md": ["30px", {"lineHeight": "40px", "fontWeight": "700"}],
+            "body-md": ["20px", {"lineHeight": "32px", "fontWeight": "500"}],
+            "headline-lg": ["44px", {"lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "label-md": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "headline-lg-mobile": ["36px", {"lineHeight": "44px", "fontWeight": "700"}]
+          },
+          "boxShadow": {
+            "card": "0 1px 2px rgba(31,41,55,0.04), 0 0 0 2px #E5E1D8",
+            "card-hover": "0 2px 6px rgba(31,41,55,0.06), 0 0 0 3px #1A4D6B",
+            "focus-ring": "0 0 0 4px rgba(26,77,107,0.25)"
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="shared.css" rel="stylesheet"/>
+</head>
+<body class="bg-background font-body-md text-on-surface min-h-screen antialiased flex flex-col">
+
+<div id="af-header" data-page="dashboard"></div>
+
+<main class="w-full pt-24 pb-margin-desktop flex-1">
+  <div class="max-w-max-width mx-auto px-gutter">
+    <div class="flex flex-col w-full">
+
+      <div class="mb-14">
+        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-5" id="welcome-heading">Welcome back</h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl">Access your saved information, continue applications, or start a new form from here.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter mb-margin-desktop">
+        <!-- Fill Application Card -->
+        <button id="btn-fill-app" class="group flex flex-col items-start p-7 bg-surface rounded-2xl border-2 border-border-soft hover:border-primary transition-all min-h-touch-target focus:outline-none focus:shadow-focus-ring shadow-card hover:shadow-none text-left">
+          <div class="bg-primary-container p-4 rounded-2xl mb-6 border-2 border-primary-container">
+            <span class="material-symbols-outlined text-on-primary-container text-[34px]" style="font-variation-settings: 'FILL' 1;">description</span>
+          </div>
+          <h2 class="font-headline-md text-headline-md text-on-surface mb-3">Fill Application</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">Start filling a new form</p>
+          <div class="mt-auto pt-7 flex items-center gap-3 text-primary">
+            <span class="font-label-md text-label-md">Start now</span>
+            <span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </div>
+        </button>
+
+        <!-- Drafts Card -->
+        <button class="group flex flex-col items-start p-7 bg-surface rounded-2xl border-2 border-border-soft hover:border-primary transition-all min-h-touch-target focus:outline-none focus:shadow-focus-ring shadow-card hover:shadow-none text-left">
+          <div class="bg-draft-container p-4 rounded-2xl mb-6 border-2 border-draft-container">
+            <span class="material-symbols-outlined text-on-draft-container text-[34px]" style="font-variation-settings: 'FILL' 1;">edit_document</span>
+          </div>
+          <h2 class="font-headline-md text-headline-md text-on-surface mb-3">Drafts</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">Continue a saved, incomplete application</p>
+          <div class="mt-4 flex items-center gap-2 bg-info-container px-4 py-2 rounded-full border-2 border-outline-variant">
+            <span class="material-symbols-outlined text-on-info-container text-[20px]">pending</span>
+            <span class="font-label-md text-label-md text-on-info-container">2 pending</span>
+          </div>
+          <div class="mt-auto pt-6 flex items-center gap-3 text-primary">
+            <span class="font-label-md text-label-md">View drafts</span>
+            <span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </div>
+        </button>
+
+        <!-- My Saved Info Card -->
+        <button class="group flex flex-col items-start p-7 bg-surface rounded-2xl border-2 border-border-soft hover:border-primary transition-all min-h-touch-target focus:outline-none focus:shadow-focus-ring shadow-card hover:shadow-none text-left">
+          <div class="bg-consent-container p-4 rounded-2xl mb-6 border-2 border-consent-container">
+            <span class="material-symbols-outlined text-on-consent-container text-[34px]" style="font-variation-settings: 'FILL' 1;">account_box</span>
+          </div>
+          <h2 class="font-headline-md text-headline-md text-on-surface mb-3">My Saved Info</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">View or edit your stored profile data</p>
+          <div class="mt-auto pt-7 flex items-center gap-3 text-primary">
+            <span class="font-label-md text-label-md">Manage profile</span>
+            <span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </div>
+        </button>
+
+        <!-- Upload Documents Card -->
+        <button class="group flex flex-col items-start p-7 bg-surface rounded-2xl border-2 border-border-soft hover:border-primary transition-all min-h-touch-target focus:outline-none focus:shadow-focus-ring shadow-card hover:shadow-none text-left">
+          <div class="bg-upload-container p-4 rounded-2xl mb-6 border-2 border-upload-container">
+            <span class="material-symbols-outlined text-on-upload-container text-[34px]" style="font-variation-settings: 'FILL' 1;">upload_file</span>
+          </div>
+          <h2 class="font-headline-md text-headline-md text-on-surface mb-3">Upload Docs</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">Add Aadhaar, PAN, or other documents</p>
+          <div class="mt-auto pt-7 flex items-center gap-3 text-primary">
+            <span class="font-label-md text-label-md">Upload new</span>
+            <span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </div>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+        <div class="lg:col-span-2 flex flex-col gap-5">
+          <h3 class="font-headline-md text-headline-md text-on-surface">Recent Activity</h3>
+          <div class="bg-surface rounded-2xl border-2 border-border-soft p-7 flex flex-col gap-7 shadow-card">
+
+            <div class="flex items-start gap-5 pb-7 border-b-2 border-border-soft">
+              <div class="min-w-14 w-14 h-14 rounded-2xl bg-consent-container flex items-center justify-center border-2 border-consent-container">
+                <span class="material-symbols-outlined text-on-consent-container text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+              </div>
+              <div class="flex-1 pt-1">
+                <p class="font-body-lg text-body-lg text-on-surface font-semibold">Passport Renewal Application</p>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Submitted successfully on Oct 24, 2023</p>
+              </div>
+              <span class="material-symbols-outlined text-on-surface-variant text-[28px] opacity-50">chevron_right</span>
+            </div>
+
+            <div class="flex items-start gap-5">
+              <div class="min-w-14 w-14 h-14 rounded-2xl bg-info-container flex items-center justify-center border-2 border-info-container">
+                <span class="material-symbols-outlined text-on-info-container text-[28px]" style="font-variation-settings: 'FILL' 0;">schedule</span>
+              </div>
+              <div class="flex-1 pt-1">
+                <p class="font-body-lg text-body-lg text-on-surface font-semibold">Voter ID Registration</p>
+                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Saved as draft on Oct 20, 2023</p>
+              </div>
+              <span class="material-symbols-outlined text-on-surface-variant text-[28px] opacity-50">chevron_right</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-5">
+          <h3 class="font-headline-md text-headline-md text-on-surface">Need Help?</h3>
+          <div class="bg-surface rounded-2xl border-[3px] border-consent p-8 flex flex-col items-center text-center gap-5 shadow-card h-full justify-center relative overflow-hidden">
+            <div class="w-18 h-18 bg-consent-container rounded-2xl flex items-center justify-center p-5 border-2 border-consent-container">
+              <span class="material-symbols-outlined text-[44px] text-on-consent-container" style="font-variation-settings: 'FILL' 1;">support_agent</span>
+            </div>
+            <p class="font-body-lg text-body-lg text-on-surface">Our support team is available 24/7 to assist you.</p>
+            <button class="mt-3 w-full min-h-touch-target bg-consent hover:bg-consent/90 focus:shadow-focus-ring text-on-consent transition-colors rounded-xl px-6 py-4 flex items-center justify-center gap-3 font-label-md text-label-md shadow-card focus:outline-none">
+              <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">chat</span>
+              Contact Support
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<div id="af-footer"></div>
+
+<script src="shared.js"></script>
+<script>
+  (function pageInit() {
+    // Guard: must be logged in + onboarded
+    if (window.AF.guardAuth('dashboard')) return;
+
+    // Render chrome
+    window.AF.renderHeader('dashboard');
+    window.AF.renderFooter();
+
+    // Personalize welcome heading with stored name
+    const session = window.AF.getSession();
+    const name = session && session.name ? session.name : 'Friend';
+    const h = document.getElementById('welcome-heading');
+    if (h) h.textContent = 'Welcome back, ' + name;
+
+    // Wire Fill Application button to jump to voice flow
+    const fillBtn = document.getElementById('btn-fill-app');
+    if (fillBtn) {
+      fillBtn.addEventListener('click', () => {
+        location.href = window.AF.url('voiceFlow');
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>

@@ -26,7 +26,8 @@
       toastTitle: "AccessFill Summary",
       toastFilled: (filled, total, remaining) => `Filled ${filled} of ${total} fields. ${remaining} fields need your input.`,
       toastNoFields: "No matching form fields were found on this page.",
-      toastNotSignedIn: "Please sign in via AccessFill extension to autofill forms."
+      toastNotSignedIn: "Please sign in via AccessFill extension to autofill forms.",
+      toastGeminiFallback: "Some fields couldn't be matched automatically."
     },
     hi: {
       consentTitle: "AccessFill: संवेदनशील डेटा सहमति",
@@ -37,7 +38,8 @@
       toastTitle: "AccessFill सारांश",
       toastFilled: (filled, total, remaining) => `${total} में से ${filled} फ़ील्ड भरे गए। ${remaining} फ़ील्ड में आपके इनपुट की आवश्यकता है।`,
       toastNoFields: "इस पृष्ठ पर कोई मेल खाने वाले फ़ील्ड नहीं मिले।",
-      toastNotSignedIn: "ऑटोफ़िल करने के लिए कृपया AccessFill एक्सटेंशन में साइन इन करें।"
+      toastNotSignedIn: "ऑटोफ़िल करने के लिए कृपया AccessFill एक्सटेंशन में साइन इन करें।",
+      toastGeminiFallback: "कुछ फ़ील्ड स्वचालित रूप से मेल नहीं खा सके।"
     }
   };
 
@@ -85,33 +87,65 @@
   function scanPageFields() {
     if (!window.AccessFillMatcher) {
       console.error("[AccessFill Content] AccessFillMatcher module is missing.");
-      return { totalControls: 0, matchedCount: 0, matches: [] };
+      return { totalControls: 0, matchedCount: 0, unmatchedFields: [], matches: [] };
     }
 
     const formControls = document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="file"]), select, textarea');
-    const matches = [];
-
     formControls.forEach((el, index) => {
-      // Assign a temporary unique DOM identifier if needed
       if (!el.dataset.accessfillId) {
         el.dataset.accessfillId = 'af-field-' + index + '-' + Date.now();
       }
+    });
 
-      const matchResult = window.AccessFillMatcher.matchField(el);
-      if (matchResult && matchResult.fieldKey) {
+    const matcherResult = window.AccessFillMatcher.buildUnmatchedFieldPayload(formControls);
+    const unmatchedById = new Map(matcherResult.unmatchedFields.map(field => [field.fieldId, field]));
+    const matches = matcherResult.matchedFields.map(item => ({
+      element: item.element,
+      elementId: item.element.dataset.accessfillId,
+      fieldId: null,
+      match: item.match
+    }));
+
+    formControls.forEach((el, index) => {
+      const unmatched = unmatchedById.get(`field_${index}`);
+      if (unmatched) {
         matches.push({
           element: el,
           elementId: el.dataset.accessfillId,
-          match: matchResult
+          fieldId: unmatched.fieldId,
+          match: {
+            fieldKey: null,
+            confidence: 0,
+            layer: 3,
+            isSensitive: false,
+            contexts: unmatched.contexts
+          }
         });
       }
     });
 
     return {
       totalControls: formControls.length,
-      matchedCount: matches.length,
+      matchedCount: matcherResult.matchedFields.length,
+      unmatchedFields: matcherResult.unmatchedFields,
       matches: matches
     };
+  }
+
+  function requestGeminiMatches(unmatchedFields, availableKeys) {
+    return new Promise(resolve => {
+      chrome.runtime.sendMessage({
+        action: 'MATCH_WITH_GEMINI',
+        unmatchedFields,
+        availableKeys
+      }, response => {
+        if (chrome.runtime.lastError) {
+          resolve({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        resolve(response || { success: false, error: 'No response from Gemini matcher' });
+      });
+    });
   }
 
   /**
@@ -255,15 +289,40 @@
   async function executeFormFill(profile) {
     const lang = profile?.preferred_language || 'en';
     const scan = scanPageFields();
+    let geminiUnavailable = false;
 
-    if (scan.matchedCount === 0) {
+    if (scan.unmatchedFields.length > 0) {
+      const availableKeys = [
+        'full_name', 'phone', 'email', 'address_line1', 'city', 'state', 'zip',
+        'date_of_birth', 'aadhaar_number', 'pan_number', 'emergency_contact_name',
+        'emergency_contact_phone', 'medical_info'
+      ];
+      const geminiResult = await requestGeminiMatches(scan.unmatchedFields, availableKeys);
+      if (geminiResult.success && geminiResult.mapping) {
+        scan.matches.forEach(item => {
+          if (!item.fieldId) return;
+          const fieldKey = geminiResult.mapping[item.fieldId];
+          if (fieldKey) {
+            item.match.fieldKey = fieldKey;
+            item.match.layer = 3;
+            item.match.isSensitive = window.AccessFillMatcher.SENSITIVE_FIELDS.includes(fieldKey);
+          }
+        });
+      } else {
+        geminiUnavailable = true;
+      }
+    }
+
+    const resolvedMatches = scan.matches.filter(item => item.match.fieldKey);
+    if (resolvedMatches.length === 0) {
       showSummaryToast(0, scan.totalControls, lang);
+      if (geminiUnavailable) showFallbackToast(lang);
       return { filled: 0, total: scan.totalControls };
     }
 
     // Separate sensitive matches vs standard matches
-    const sensitiveMatches = scan.matches.filter(m => m.match.isSensitive && profile[m.match.fieldKey]);
-    const standardMatches = scan.matches.filter(m => !m.match.isSensitive && profile[m.match.fieldKey]);
+    const sensitiveMatches = resolvedMatches.filter(m => m.match.isSensitive && profile[m.match.fieldKey]);
+    const standardMatches = resolvedMatches.filter(m => !m.match.isSensitive && profile[m.match.fieldKey]);
 
     const doFill = (itemsToFill) => {
       let filledCounter = 0;
@@ -283,6 +342,7 @@
       });
 
       showSummaryToast(filledCounter, scan.totalControls, lang);
+      if (geminiUnavailable) showFallbackToast(lang);
       return filledCounter;
     };
 
@@ -307,6 +367,17 @@
     }
 
     return { matched: scan.matchedCount, total: scan.totalControls };
+  }
+
+  function showFallbackToast(lang) {
+    const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+    const toast = document.createElement('div');
+    toast.className = 'accessfill-toast-container';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    toast.textContent = t.toastGeminiFallback;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 5000);
   }
 
   /**

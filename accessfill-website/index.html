@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>AccessFill — Accessibility-first form assistance</title>
+  <script src="shared.js"></script>
+  <script>
+    (function rootRedirect() {
+      try {
+        const loggedIn = localStorage.getItem('af_session') != null;
+        const onboarded = localStorage.getItem('af_onboarded') === 'true';
+        if (loggedIn) {
+          location.replace(onboarded ? 'dashboard.html' : 'onboarding.html');
+        } else {
+          location.replace('login.html');
+        }
+      } catch (_) {
+        location.replace('login.html');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <p style="font-family:system-ui; padding: 2rem;">Redirecting… If nothing happens, <a href="login.html">go to sign in</a>.</p>
+</body>
+</html>

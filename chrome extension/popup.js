@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const editAadhaarInput = document.getElementById('edit-aadhaar');
   const editPanInput = document.getElementById('edit-pan');
   const editDobInput = document.getElementById('edit-dob');
+  const geminiApiKeyInput = document.getElementById('gemini-api-key');
 
   // Error Spans
   const errPhone = document.getElementById('err-phone');
@@ -56,6 +57,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentLang = 'en';
   let userProfile = null;
   let isDemoSession = false;
+
+  // In production, proxy this key through a backend rather than storing it client-side.
+  if (geminiApiKeyInput) {
+    const storedGeminiKey = await chrome.storage.local.get(['geminiApiKey']);
+    geminiApiKeyInput.value = storedGeminiKey.geminiApiKey || '';
+    const saveGeminiApiKey = () => chrome.storage.local.set({ geminiApiKey: geminiApiKeyInput.value.trim() });
+    geminiApiKeyInput.addEventListener('change', saveGeminiApiKey);
+    geminiApiKeyInput.addEventListener('blur', saveGeminiApiKey);
+  }
 
   // Set DOB max attribute to today's date YYYY-MM-DD
   const todayStr = new Date().toISOString().split('T')[0];

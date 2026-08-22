@@ -93,6 +93,61 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    case 'MATCH_WITH_GEMINI': {
+      chrome.storage.local.get(['geminiApiKey'], async (result) => {
+        const apiKey = result.geminiApiKey;
+        if (!apiKey) {
+          sendResponse({ success: false, error: 'No Gemini API key configured' });
+          return;
+        }
+
+        const unmatchedFields = Array.isArray(request.unmatchedFields) ? request.unmatchedFields : [];
+        const availableKeys = Array.isArray(request.availableKeys) ? request.availableKeys : [];
+        const prompt = [
+          'Match each unmatched form field to the available profile key.',
+          'For each field, return the single best matching key from availableKeys, or null if no key is a confident match.',
+          'Do not guess - return null rather than a low-confidence match.',
+          'Return ONLY a raw JSON object like {"field_0":"phone","field_1":null}.',
+          `Unmatched fields: ${JSON.stringify(unmatchedFields)}`,
+          `availableKeys: ${JSON.stringify(availableKeys)}`
+        ].join('\n');
+
+        try {
+          const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(apiKey), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { responseMimeType: 'application/json' }
+            })
+          });
+
+          if (!response.ok) {
+            sendResponse({ success: false, error: 'Gemini matching unavailable - falling back to unmatched' });
+            return;
+          }
+
+          const data = await response.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const cleanText = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+          const parsed = JSON.parse(cleanText);
+          const mapping = {};
+          const allowedKeys = new Set(availableKeys);
+          unmatchedFields.forEach(field => {
+            const value = parsed[field.fieldId];
+            mapping[field.fieldId] = value === null || allowedKeys.has(value) ? value ?? null : null;
+          });
+
+          console.log('[AccessFill Background] Gemini matching completed:', sanitizeLogPayload({ unmatchedFields, mapping }));
+          sendResponse({ success: true, mapping });
+        } catch (error) {
+          console.warn('[AccessFill Background] Gemini matching failed:', error.message);
+          sendResponse({ success: false, error: 'Gemini matching unavailable - falling back to unmatched' });
+        }
+      });
+      return true;
+    }
+
     case 'UPDATE_BADGE': {
       if (sender.tab) {
         const text = request.count > 0 ? String(request.count) : '';

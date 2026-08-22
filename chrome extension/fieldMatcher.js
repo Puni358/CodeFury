@@ -3,7 +3,7 @@
  * 
  * Layer 1: Direct HTML Attribute Match (autocomplete, name, id)
  * Layer 2: Fuzzy Label & Context Match (labels, placeholders, aria-labels, nearby text with English/Hindi dictionary)
- * Layer 3: Fallback Stub for LLM Schema Extraction
+ * Layer 3: Context extraction for optional LLM matching
  */
 
 (function (global) {
@@ -235,7 +235,7 @@
   }
 
   /**
-   * Layer 3: Fallback Stub
+  * Layer 3: Extract context for optional LLM matching
    */
   function matchLayer3(element) {
     const contexts = extractFieldContext(element);
@@ -243,9 +243,33 @@
       fieldKey: null,
       confidence: 0,
       layer: 3,
-      note: "unmatched — could route to LLM matching",
+      note: "unmatched - ready for optional LLM matching",
       contexts: contexts
     };
+  }
+
+  /**
+   * Build the local matches and context-only payload for unmatched fields.
+   */
+  function buildUnmatchedFieldPayload(elements) {
+    const matchedFields = [];
+    const unmatchedFields = [];
+
+    Array.from(elements || []).forEach((element, index) => {
+      const match = matchField(element);
+      if (!match) return;
+
+      if (match.fieldKey) {
+        matchedFields.push({ element, match });
+      } else if (match.layer === 3) {
+        unmatchedFields.push({
+          fieldId: `field_${index}`,
+          contexts: match.contexts
+        });
+      }
+    });
+
+    return { matchedFields, unmatchedFields };
   }
 
   /**
@@ -283,6 +307,7 @@
     matchLayer1,
     matchLayer2,
     matchLayer3,
+    buildUnmatchedFieldPayload,
     SYNONYM_DICTIONARY,
     SENSITIVE_FIELDS,
     normalizeText

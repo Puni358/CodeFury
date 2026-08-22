@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Accessibility Preferences — AccessFill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#FAF8F3",
+            "surface": "#FFFFFF",
+            "surface-low": "#FDFBF6",
+            "surface-container": "#FFFBF4",
+            "surface-container-high": "#F5F1E8",
+            "on-surface": "#1F2937",
+            "on-surface-variant": "#4B5563",
+            "outline": "#9CA3AF",
+            "outline-variant": "#D6D3CB",
+            "border-soft": "#E5E1D8",
+
+            "primary": "#1A4D6B",
+            "on-primary": "#FFFFFF",
+            "primary-container": "#D6E6EE",
+            "on-primary-container": "#0B2C42",
+            "focus-indicator": "#1A4D6B",
+            "surface-tint": "#236389",
+
+            "destructive": "#8B2635",
+            "on-destructive": "#FFFFFF",
+            "destructive-container": "#F5D9DE",
+            "on-destructive-container": "#5C1420",
+
+            "consent": "#2D6A4F",
+            "on-consent": "#FFFFFF",
+            "consent-container": "#D4E7DB",
+            "on-consent-container": "#183B2A",
+
+            "info-container": "#E6E0D3",
+            "on-info-container": "#3B3325",
+            "draft-container": "#DBE3EC",
+            "on-draft-container": "#1F3347",
+            "upload-container": "#EDE0D5",
+            "on-upload-container": "#4A2E19"
+          },
+          "borderRadius": {
+            "DEFAULT": "8px",
+            "lg": "12px",
+            "xl": "16px",
+            "2xl": "20px",
+            "full": "9999px"
+          },
+          "spacing": {
+            "max-width": "1200px",
+            "gutter": "28px",
+            "stack-gap": "16px",
+            "touch-target": "56px",
+            "margin-desktop": "72px"
+          },
+          "fontFamily": {
+            "label-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg": ["Atkinson Hyperlegible Next"],
+            "body-lg": ["Atkinson Hyperlegible Next"],
+            "headline-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg-mobile": ["Atkinson Hyperlegible Next"],
+            "body-md": ["Atkinson Hyperlegible Next"]
+          },
+          "fontSize": {
+            "label-md": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "headline-lg": ["44px", {"lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "body-lg": ["22px", {"lineHeight": "36px", "fontWeight": "500"}],
+            "headline-md": ["30px", {"lineHeight": "40px", "fontWeight": "700"}],
+            "headline-lg-mobile": ["36px", {"lineHeight": "44px", "fontWeight": "700"}],
+            "body-md": ["20px", {"lineHeight": "32px", "fontWeight": "500"}]
+          },
+          "boxShadow": {
+            "card": "0 1px 2px rgba(31,41,55,0.04), 0 0 0 2px #E5E1D8",
+            "focus-ring": "0 0 0 4px rgba(26,77,107,0.25)",
+            "consent-ring": "0 0 0 4px rgba(45,106,79,0.25)"
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="shared.css" rel="stylesheet"/>
+</head>
+<body class="bg-background font-body-md text-on-surface min-h-screen antialiased flex flex-col">
+
+<div id="af-header" data-page="settings"></div>
+
+<main class="w-full pt-20 pb-margin-desktop flex-1">
+  <div class="max-w-max-width mx-auto px-gutter">
+    <div class="flex flex-col w-full relative">
+      <div class="mb-8 mt-12">
+        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-4">Accessibility Preferences</h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl">
+          Customize your experience to reduce cognitive load and enhance legibility. Your settings will be applied immediately across all screens.
+        </p>
+      </div>
+
+      <!-- Saved confirmation banner -->
+      <div id="save-banner"
+           class="hidden mb-8 rounded-2xl border-2 border-consent bg-consent-container p-6 flex items-center gap-5 shadow-card"
+           role="status" aria-live="polite">
+        <span class="material-symbols-outlined text-on-consent-container text-[32px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+        <p class="font-label-md text-label-md text-on-consent-container">Preferences saved. Changes are applied immediately.</p>
+      </div>
+
+      <form class="flex flex-col gap-8" id="accessibility-form">
+
+        <!-- Font Size -->
+        <div class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+          <div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <span aria-hidden="true" class="w-11 h-11 rounded-xl bg-primary-container border-2 border-primary-container flex items-center justify-center">
+                  <span class="material-symbols-outlined text-on-primary-container text-[26px]">format_size</span>
+                </span>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Font Size</h2>
+              </div>
+              <p class="font-body-md text-body-md text-on-surface-variant ml-14">Adjust text size for optimal readability.</p>
+            </div>
+            <div aria-labelledby="font-size-group" class="flex flex-col w-full md:w-72 gap-3" id="font-size-group" role="radiogroup">
+              <label class="cursor-pointer relative">
+                <input class="tog-peer sr-only" name="font-size" type="radio" value="small"/>
+                <div class="min-h-touch-target px-5 w-full rounded-xl border-2 border-outline-variant bg-surface-low flex items-center justify-between text-on-surface hover:bg-surface-container-high tog-peer:bg-primary-container tog-peer:text-on-primary-container tog-peer:border-[3px] tog-peer:border-primary focus-within:shadow-focus-ring transition-all">
+                  <span class="font-body-md text-body-md tog-peer:font-label-md">Small</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary hidden tog-peer:block">check_circle</span>
+                </div>
+              </label>
+              <label class="cursor-pointer relative">
+                <input class="tog-peer sr-only" name="font-size" type="radio" value="medium"/>
+                <div class="min-h-touch-target px-5 w-full rounded-xl border-2 border-outline-variant bg-surface-low flex items-center justify-between text-on-surface hover:bg-surface-container-high tog-peer:bg-primary-container tog-peer:text-on-primary-container tog-peer:border-[3px] tog-peer:border-primary focus-within:shadow-focus-ring transition-all">
+                  <span class="font-body-md text-body-md tog-peer:font-label-md">Medium</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary hidden tog-peer:block">check_circle</span>
+                </div>
+              </label>
+              <label class="cursor-pointer relative">
+                <input class="tog-peer sr-only" name="font-size" type="radio" value="large"/>
+                <div class="min-h-touch-target px-5 w-full rounded-xl border-2 border-outline-variant bg-surface-low flex items-center justify-between text-on-surface hover:bg-surface-container-high tog-peer:bg-primary-container tog-peer:text-on-primary-container tog-peer:border-[3px] tog-peer:border-primary focus-within:shadow-focus-ring transition-all">
+                  <span class="font-body-md text-body-md tog-peer:font-label-md">Large</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary hidden tog-peer:block">check_circle</span>
+                </div>
+              </label>
+              <label class="cursor-pointer relative">
+                <input class="tog-peer sr-only" name="font-size" type="radio" value="xlarge"/>
+                <div class="min-h-touch-target px-5 w-full rounded-xl border-2 border-outline-variant bg-surface-low flex items-center justify-between text-on-surface hover:bg-surface-container-high tog-peer:bg-primary-container tog-peer:text-on-primary-container tog-peer:border-[3px] tog-peer:border-primary focus-within:shadow-focus-ring transition-all">
+                  <span class="font-body-md text-body-md tog-peer:font-label-md">Extra Large</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary hidden tog-peer:block">check_circle</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contrast Level -->
+        <div class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+          <div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <span aria-hidden="true" class="w-11 h-11 rounded-xl bg-primary-container border-2 border-primary-container flex items-center justify-center">
+                  <span class="material-symbols-outlined text-on-primary-container text-[26px]">contrast</span>
+                </span>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Contrast Level</h2>
+              </div>
+              <p class="font-body-md text-body-md text-on-surface-variant ml-14">Increase contrast for sharper visual distinction.</p>
+            </div>
+            <div aria-labelledby="contrast-group" class="flex flex-col w-full md:w-72 gap-3" id="contrast-group" role="radiogroup">
+              <label class="cursor-pointer relative">
+                <input class="tog-peer sr-only" name="contrast" type="radio" value="normal"/>
+                <div class="min-h-touch-target px-5 w-full rounded-xl border-2 border-outline-variant bg-surface-low flex items-center justify-between text-on-surface hover:bg-surface-container-high tog-peer:bg-primary-container tog-peer:text-on-primary-container tog-peer:border-[3px] tog-peer:border-primary focus-within:shadow-focus-ring transition-all">
+                  <span class="font-body-md text-body-md tog-peer:font-label-md">Normal</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary hidden tog-peer:block">check_circle</span>
+                </div>
+              </label>
+              <label class="cursor-pointer relative">
+                <input class="tog-peer sr-only" name="contrast" type="radio" value="high"/>
+                <div class="min-h-touch-target px-5 w-full rounded-xl border-2 border-outline-variant bg-surface-low flex items-center justify-between text-on-surface hover:bg-surface-container-high tog-peer:bg-primary-container tog-peer:text-on-primary-container tog-peer:border-[3px] tog-peer:border-primary focus-within:shadow-focus-ring transition-all">
+                  <span class="font-body-md text-body-md tog-peer:font-label-md">High</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary hidden tog-peer:block">check_circle</span>
+                </div>
+              </label>
+              <label class="cursor-pointer relative">
+                <input class="tog-peer sr-only" name="contrast" type="radio" value="extra-high"/>
+                <div class="min-h-touch-target px-5 w-full rounded-xl border-2 border-outline-variant bg-surface-low flex items-center justify-between text-on-surface hover:bg-surface-container-high tog-peer:bg-primary-container tog-peer:text-on-primary-container tog-peer:border-[3px] tog-peer:border-primary focus-within:shadow-focus-ring transition-all">
+                  <span class="font-body-md text-body-md tog-peer:font-label-md">Extra High</span>
+                  <span aria-hidden="true" class="material-symbols-outlined text-primary hidden tog-peer:block">check_circle</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Language -->
+        <div class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <span aria-hidden="true" class="w-11 h-11 rounded-xl bg-primary-container border-2 border-primary-container flex items-center justify-center">
+                  <span class="material-symbols-outlined text-on-primary-container text-[26px]">language</span>
+                </span>
+                <label class="font-headline-md text-headline-md text-on-surface" for="language-select">Language</label>
+              </div>
+              <p class="font-body-md text-body-md text-on-surface-variant ml-14">Select your preferred interface language.</p>
+            </div>
+            <div class="relative w-full md:w-72">
+              <select class="appearance-none min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 pr-14 font-body-md text-body-md text-on-surface focus:border-[3px] focus:border-primary focus:outline-none focus:shadow-focus-ring cursor-pointer" id="language-select" name="language">
+                <option value="en">English</option>
+                <option value="hi">Hindi</option>
+                <option value="kn">Kannada</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-5 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">expand_more</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggles Section -->
+        <div class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+          <div class="flex flex-col gap-6">
+
+            <!-- Voice Guidance -->
+            <div class="flex items-center justify-between gap-6">
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-3">
+                  <span aria-hidden="true" class="w-11 h-11 rounded-xl bg-primary-container border-2 border-primary-container flex items-center justify-center">
+                    <span class="material-symbols-outlined text-on-primary-container text-[26px]">record_voice_over</span>
+                  </span>
+                  <label class="font-headline-md text-headline-md text-on-surface" for="voice-guidance">Voice Guidance</label>
+                </div>
+                <p class="font-body-md text-body-md text-on-surface-variant ml-14">Enable spoken prompts and audio feedback for navigation.</p>
+              </div>
+              <div>
+                <label class="relative inline-flex items-center cursor-pointer min-h-touch-target">
+                  <input class="sr-only tog-peer" id="voice-guidance" name="voice" type="checkbox"/>
+                  <span class="tog-wrap inline-flex items-center">
+                    <span class="tog-track tog-peer:checked:bg-primary tog-peer:checked:border-primary inline-flex h-10 w-[72px] items-center rounded-full border-2 border-outline bg-outline-variant shadow-sm">
+                      <span class="tog-thumb tog-peer:checked:bg-on-primary tog-peer:checked:border-on-primary ml-1 inline-block h-8 w-8 rounded-full border-2 border-outline bg-outline shadow-sm"></span>
+                    </span>
+                  </span>
+                  <span class="ml-4 font-label-md text-label-md text-on-surface sr-only">Toggle Voice Guidance</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="w-full h-[2px] bg-border-soft rounded-full"></div>
+
+            <!-- Animations -->
+            <div class="flex items-center justify-between gap-6">
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-3">
+                  <span aria-hidden="true" class="w-11 h-11 rounded-xl bg-primary-container border-2 border-primary-container flex items-center justify-center">
+                    <span class="material-symbols-outlined text-on-primary-container text-[26px]">animation</span>
+                  </span>
+                  <label class="font-headline-md text-headline-md text-on-surface" for="animations-toggle">Animations</label>
+                </div>
+                <p class="font-body-md text-body-md text-on-surface-variant ml-14">Reduce motion by disabling non-essential animations.</p>
+              </div>
+              <div>
+                <label class="relative inline-flex items-center cursor-pointer min-h-touch-target">
+                  <input class="sr-only tog-peer" id="animations-toggle" name="animations" type="checkbox"/>
+                  <span class="tog-wrap inline-flex items-center">
+                    <span class="tog-track tog-peer:checked:bg-primary tog-peer:checked:border-primary inline-flex h-10 w-[72px] items-center rounded-full border-2 border-outline bg-outline-variant shadow-sm">
+                      <span class="tog-thumb tog-peer:checked:bg-on-primary tog-peer:checked:border-on-primary ml-1 inline-block h-8 w-8 rounded-full border-2 border-outline bg-outline shadow-sm"></span>
+                    </span>
+                  </span>
+                  <span class="ml-4 font-label-md text-label-md text-on-surface sr-only">Toggle Animations</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="w-full h-[2px] bg-border-soft rounded-full"></div>
+
+            <!-- Simplified UI -->
+            <div class="flex items-center justify-between gap-6">
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-3">
+                  <span aria-hidden="true" class="w-11 h-11 rounded-xl bg-primary-container border-2 border-primary-container flex items-center justify-center">
+                    <span class="material-symbols-outlined text-on-primary-container text-[26px]">chrome_reader_mode</span>
+                  </span>
+                  <label class="font-headline-md text-headline-md text-on-surface" for="simplified-ui-toggle">Simplified UI</label>
+                </div>
+                <p class="font-body-md text-body-md text-on-surface-variant ml-14">Hide secondary information to focus on core tasks.</p>
+              </div>
+              <div>
+                <label class="relative inline-flex items-center cursor-pointer min-h-touch-target">
+                  <input class="sr-only tog-peer" id="simplified-ui-toggle" name="simplified" type="checkbox"/>
+                  <span class="tog-wrap inline-flex items-center">
+                    <span class="tog-track tog-peer:checked:bg-primary tog-peer:checked:border-primary inline-flex h-10 w-[72px] items-center rounded-full border-2 border-outline bg-outline-variant shadow-sm">
+                      <span class="tog-thumb tog-peer:checked:bg-on-primary tog-peer:checked:border-on-primary ml-1 inline-block h-8 w-8 rounded-full border-2 border-outline bg-outline shadow-sm"></span>
+                    </span>
+                  </span>
+                  <span class="ml-4 font-label-md text-label-md text-on-surface sr-only">Toggle Simplified UI</span>
+                </label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col sm:flex-row justify-end gap-4">
+          <button type="button" id="reset-btn"
+                  class="min-h-touch-target w-full sm:w-auto rounded-2xl border-2 border-outline-variant bg-surface-low hover:bg-surface-container-high text-on-surface focus:shadow-focus-ring px-10 py-4 flex items-center justify-center gap-3 font-label-md text-[20px] font-bold transition-colors focus:outline-none">
+            <span>Reset to defaults</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-[24px]">restart_alt</span>
+          </button>
+          <button class="min-h-touch-target w-full sm:w-auto rounded-2xl bg-primary hover:bg-surface-tint focus:shadow-focus-ring px-10 py-4 flex items-center justify-center gap-3 text-on-primary transition-colors shadow-card focus:outline-none" type="submit" id="save-btn">
+            <span class="font-label-md text-[20px] font-bold" id="save-btn-label">Save Preferences</span>
+            <span aria-hidden="true" class="material-symbols-outlined text-[24px]" id="save-btn-icon">save</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<div id="af-footer"></div>
+
+<script src="shared.js"></script>
+<script>
+  (function pageInit() {
+    if (window.AF.guardAuth('settings')) return;
+    window.AF.renderHeader('settings');
+    window.AF.renderFooter();
+
+    const form = document.getElementById('accessibility-form');
+    const saveBtn = document.getElementById('save-btn');
+    const saveLabel = document.getElementById('save-btn-label');
+    const saveIcon = document.getElementById('save-btn-icon');
+    const banner = document.getElementById('save-banner');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const fsRadios = form.querySelectorAll('input[name="font-size"]');
+    const cRadios = form.querySelectorAll('input[name="contrast"]');
+    const langSel = form.querySelector('#language-select');
+    const voiceTog = form.querySelector('#voice-guidance');
+    const animTog = form.querySelector('#animations-toggle');
+    const simpTog = form.querySelector('#simplified-ui-toggle');
+
+    const DEFAULTS = {
+      fontSize: 'medium',
+      contrast: 'normal',
+      language: 'en',
+      voice: false,
+      animations: !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches),
+      simplified: false
+    };
+
+    function applyPrefsToForm(p) {
+      fsRadios.forEach(r => { r.checked = (r.value === p.fontSize); });
+      cRadios.forEach(r => { r.checked = (r.value === p.contrast); });
+      if (langSel) langSel.value = p.language;
+      if (voiceTog) voiceTog.checked = !!p.voice;
+      if (animTog) animTog.checked = !!p.animations;
+      if (simpTog) simpTog.checked = !!p.simplified;
+    }
+
+    function readPrefsFromForm() {
+      let fontSize = DEFAULTS.fontSize;
+      fsRadios.forEach(r => { if (r.checked) fontSize = r.value; });
+      let contrast = DEFAULTS.contrast;
+      cRadios.forEach(r => { if (r.checked) contrast = r.value; });
+      return {
+        fontSize,
+        contrast,
+        language: langSel ? langSel.value : DEFAULTS.language,
+        voice: voiceTog ? voiceTog.checked : DEFAULTS.voice,
+        animations: animTog ? animTog.checked : DEFAULTS.animations,
+        simplified: simpTog ? simpTog.checked : DEFAULTS.simplified
+      };
+    }
+
+    function flashSavedBanner() {
+      banner.classList.remove('hidden');
+      setTimeout(() => banner.classList.add('hidden'), 3000);
+    }
+
+    function setSaveButtonState(state) {
+      if (state === 'saving') {
+        saveBtn.disabled = true;
+        saveLabel.textContent = 'Saving…';
+        const spinning = !document.body.classList.contains('no-anim');
+        saveIcon.outerHTML = spinning
+          ? `<svg id="save-btn-icon" class="animate-spin w-6 h-6 text-on-primary" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>`
+          : `<span id="save-btn-icon" class="material-symbols-outlined text-[24px]">sync</span>`;
+        saveBtn.classList.add('opacity-90');
+      } else if (state === 'saved') {
+        saveLabel.textContent = 'Saved Successfully';
+        const spanId = document.getElementById('save-btn-icon');
+        if (spanId) spanId.remove();
+        saveBtn.insertAdjacentHTML('beforeend', `<span id="save-btn-icon" aria-hidden="true" class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>`);
+        saveBtn.classList.replace('bg-primary', 'bg-consent');
+        saveBtn.classList.replace('text-on-primary', 'text-on-consent');
+        saveBtn.classList.replace('hover:bg-surface-tint', 'hover:bg-consent/90');
+      } else if (state === 'idle') {
+        saveBtn.disabled = false;
+        saveLabel.textContent = 'Save Preferences';
+        const oldIcon = document.getElementById('save-btn-icon');
+        if (oldIcon) oldIcon.remove();
+        saveBtn.insertAdjacentHTML('beforeend', `<span id="save-btn-icon" aria-hidden="true" class="material-symbols-outlined text-[24px]">save</span>`);
+        saveBtn.classList.remove('opacity-90');
+        saveBtn.classList.replace('bg-consent', 'bg-primary');
+        saveBtn.classList.replace('text-on-consent', 'text-on-primary');
+        saveBtn.classList.replace('hover:bg-consent/90', 'hover:bg-surface-tint');
+      }
+    }
+
+    // Load initial prefs
+    applyPrefsToForm(window.AF.readPrefs());
+
+    // Live-preview toggles that don't require save confirmation: animations, simplified, contrast, font, language, voice
+    animTog.addEventListener('change', () => {
+      window.AF.savePrefs({ animations: animTog.checked });
+    });
+    simpTog.addEventListener('change', () => {
+      window.AF.savePrefs({ simplified: simpTog.checked });
+    });
+    voiceTog.addEventListener('change', () => {
+      window.AF.savePrefs({ voice: voiceTog.checked });
+    });
+    fsRadios.forEach(r => r.addEventListener('change', () => {
+      window.AF.savePrefs({ fontSize: r.value });
+    }));
+    cRadios.forEach(r => r.addEventListener('change', () => {
+      window.AF.savePrefs({ contrast: r.value });
+    }));
+    if (langSel) langSel.addEventListener('change', () => {
+      window.AF.savePrefs({ language: langSel.value });
+    });
+
+    resetBtn.addEventListener('click', () => {
+      window.AF.savePrefs(DEFAULTS);
+      applyPrefsToForm(DEFAULTS);
+      flashSavedBanner();
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const patch = readPrefsFromForm();
+      setSaveButtonState('saving');
+      setTimeout(() => {
+        window.AF.savePrefs(patch);
+        setSaveButtonState('saved');
+        flashSavedBanner();
+        setTimeout(() => setSaveButtonState('idle'), 2200);
+      }, 700);
+    });
+  })();
+</script>
+
+</body>
+</html>

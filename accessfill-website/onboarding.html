@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Customize your experience — AccessFill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#FAF8F3",
+            "surface": "#FFFFFF",
+            "surface-low": "#FDFBF6",
+            "surface-container": "#FFFBF4",
+            "surface-container-high": "#F5F1E8",
+            "on-surface": "#1F2937",
+            "on-surface-variant": "#4B5563",
+            "outline": "#9CA3AF",
+            "outline-variant": "#D6D3CB",
+            "border-soft": "#E5E1D8",
+
+            "primary": "#1A4D6B",
+            "on-primary": "#FFFFFF",
+            "primary-container": "#D6E6EE",
+            "on-primary-container": "#0B2C42",
+            "focus-indicator": "#1A4D6B",
+            "surface-tint": "#236389",
+
+            "destructive": "#8B2635",
+            "on-destructive": "#FFFFFF",
+            "destructive-container": "#F5D9DE",
+            "on-destructive-container": "#5C1420",
+
+            "consent": "#2D6A4F",
+            "on-consent": "#FFFFFF",
+            "consent-container": "#D4E7DB",
+            "on-consent-container": "#183B2A",
+
+            "info-container": "#E6E0D3",
+            "on-info-container": "#3B3325",
+            "draft-container": "#DBE3EC",
+            "on-draft-container": "#1F3347",
+            "upload-container": "#EDE0D5",
+            "on-upload-container": "#4A2E19"
+          },
+          "borderRadius": {
+            "DEFAULT": "8px",
+            "lg": "12px",
+            "xl": "16px",
+            "2xl": "20px",
+            "full": "9999px"
+          },
+          "spacing": {
+            "max-width": "1200px",
+            "gutter": "28px",
+            "stack-gap": "16px",
+            "touch-target": "56px",
+            "margin-desktop": "72px"
+          },
+          "fontFamily": {
+            "label-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg": ["Atkinson Hyperlegible Next"],
+            "body-lg": ["Atkinson Hyperlegible Next"],
+            "headline-md": ["Atkinson Hyperlegible Next"],
+            "headline-lg-mobile": ["Atkinson Hyperlegible Next"],
+            "body-md": ["Atkinson Hyperlegible Next"]
+          },
+          "fontSize": {
+            "label-md": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+            "headline-lg": ["44px", {"lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "body-lg": ["22px", {"lineHeight": "36px", "fontWeight": "500"}],
+            "headline-md": ["30px", {"lineHeight": "40px", "fontWeight": "700"}],
+            "headline-lg-mobile": ["36px", {"lineHeight": "44px", "fontWeight": "700"}],
+            "body-md": ["20px", {"lineHeight": "32px", "fontWeight": "500"}]
+          },
+          "boxShadow": {
+            "card": "0 1px 2px rgba(31,41,55,0.04), 0 0 0 2px #E5E1D8",
+            "selected-card": "0 0 0 3px #1A4D6B, 0 2px 8px rgba(26,77,107,0.08)",
+            "focus-ring": "0 0 0 4px rgba(26,77,107,0.25)"
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="shared.css" rel="stylesheet"/>
+</head>
+<body class="bg-background font-body-md text-on-surface flex flex-col items-center justify-start min-h-screen antialiased">
+
+<div id="af-header" data-page="onboarding"></div>
+
+<main class="w-full max-w-max-width p-gutter pt-32 flex-1">
+  <div class="flex flex-col w-full relative">
+    <div class="w-full flex flex-col items-center justify-center py-margin-desktop px-gutter">
+      <div class="max-w-[1200px] w-full flex flex-col gap-margin-desktop">
+        <div class="flex flex-col items-center gap-stack-gap text-center">
+          <div class="w-16 h-16 rounded-2xl bg-consent-container flex items-center justify-center border-2 border-consent-container mb-2">
+            <span class="material-symbols-outlined text-on-consent-container text-[40px]" style="font-variation-settings: 'FILL' 1;">tune</span>
+          </div>
+          <h1 class="font-headline-lg text-headline-lg text-on-surface">How would you like to use this service?</h1>
+          <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl">
+            Select all the options that will help us tailor your experience. You can always change these settings later.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter" id="accessibility-grid">
+          <button aria-pressed="false" class="accessibility-card w-full text-left bg-surface hover:bg-surface-container-high rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-2 border-border-soft focus:outline-none focus:shadow-focus-ring shadow-card" data-profile="visual">
+            <div class="absolute top-0 right-0 w-18 h-18 bg-consent rounded-bl-3xl hidden check-badge items-start justify-end pt-4 pr-4 shadow-card">
+              <span class="material-symbols-outlined text-on-consent text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            </div>
+            <span class="card-icon material-symbols-outlined text-[44px] text-primary mt-1">visibility</span>
+            <div class="flex flex-col gap-[8px] flex-1 pr-10">
+              <h2 class="card-title font-body-lg text-body-lg font-bold text-on-surface">Visual assistance</h2>
+              <p class="card-desc font-body-md text-body-md text-on-surface-variant">Larger text, higher contrast</p>
+            </div>
+          </button>
+          <button aria-pressed="false" class="accessibility-card w-full text-left bg-surface hover:bg-surface-container-high rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-2 border-border-soft focus:outline-none focus:shadow-focus-ring shadow-card" data-profile="voice">
+            <div class="absolute top-0 right-0 w-18 h-18 bg-consent rounded-bl-3xl hidden check-badge items-start justify-end pt-4 pr-4 shadow-card">
+              <span class="material-symbols-outlined text-on-consent text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            </div>
+            <span class="card-icon material-symbols-outlined text-[44px] text-primary mt-1">mic</span>
+            <div class="flex flex-col gap-[8px] flex-1 pr-10">
+              <h2 class="card-title font-body-lg text-body-lg font-bold text-on-surface">Voice assistance</h2>
+              <p class="card-desc font-body-md text-body-md text-on-surface-variant">Speak instead of typing</p>
+            </div>
+          </button>
+          <button aria-pressed="false" class="accessibility-card w-full text-left bg-surface hover:bg-surface-container-high rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-2 border-border-soft focus:outline-none focus:shadow-focus-ring shadow-card" data-profile="simplified">
+            <div class="absolute top-0 right-0 w-18 h-18 bg-consent rounded-bl-3xl hidden check-badge items-start justify-end pt-4 pr-4 shadow-card">
+              <span class="material-symbols-outlined text-on-consent text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            </div>
+            <span class="card-icon material-symbols-outlined text-[44px] text-primary mt-1">rule</span>
+            <div class="flex flex-col gap-[8px] flex-1 pr-10">
+              <h2 class="card-title font-body-lg text-body-lg font-bold text-on-surface">Simplified mode</h2>
+              <p class="card-desc font-body-md text-body-md text-on-surface-variant">Fewer choices, step-by-step</p>
+            </div>
+          </button>
+          <button aria-pressed="false" class="accessibility-card w-full text-left bg-surface hover:bg-surface-container-high rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-2 border-border-soft focus:outline-none focus:shadow-focus-ring shadow-card" data-profile="language">
+            <div class="absolute top-0 right-0 w-18 h-18 bg-consent rounded-bl-3xl hidden check-badge items-start justify-end pt-4 pr-4 shadow-card">
+              <span class="material-symbols-outlined text-on-consent text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            </div>
+            <span class="card-icon material-symbols-outlined text-[44px] text-primary mt-1">language</span>
+            <div class="flex flex-col gap-[8px] flex-1 pr-10">
+              <h2 class="card-title font-body-lg text-body-lg font-bold text-on-surface">Language assistance</h2>
+              <p class="card-desc font-body-md text-body-md text-on-surface-variant">Use your preferred language</p>
+            </div>
+          </button>
+          <button aria-pressed="false" class="accessibility-card w-full text-left bg-surface hover:bg-surface-container-high rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-2 border-border-soft focus:outline-none focus:shadow-focus-ring shadow-card" data-profile="motor">
+            <div class="absolute top-0 right-0 w-18 h-18 bg-consent rounded-bl-3xl hidden check-badge items-start justify-end pt-4 pr-4 shadow-card">
+              <span class="material-symbols-outlined text-on-consent text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            </div>
+            <span class="card-icon material-symbols-outlined text-[44px] text-primary mt-1">touch_app</span>
+            <div class="flex flex-col gap-[8px] flex-1 pr-10">
+              <h2 class="card-title font-body-lg text-body-lg font-bold text-on-surface">Motor assistance</h2>
+              <p class="card-desc font-body-md text-body-md text-on-surface-variant">Bigger buttons, voice-first</p>
+            </div>
+          </button>
+          <button aria-pressed="false" class="accessibility-card w-full text-left bg-surface hover:bg-surface-container-high rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-2 border-border-soft focus:outline-none focus:shadow-focus-ring shadow-card" data-profile="hearing">
+            <div class="absolute top-0 right-0 w-18 h-18 bg-consent rounded-bl-3xl hidden check-badge items-start justify-end pt-4 pr-4 shadow-card">
+              <span class="material-symbols-outlined text-on-consent text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            </div>
+            <span class="card-icon material-symbols-outlined text-[44px] text-primary mt-1">hearing</span>
+            <div class="flex flex-col gap-[8px] flex-1 pr-10">
+              <h2 class="card-title font-body-lg text-body-lg font-bold text-on-surface">Hearing assistance</h2>
+              <p class="card-desc font-body-md text-body-md text-on-surface-variant">Visual instead of audio cues</p>
+            </div>
+          </button>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mt-[32px]">
+          <button class="min-h-touch-target w-full sm:w-auto min-w-[200px] rounded-2xl border-2 border-outline-variant bg-surface-low text-on-surface hover:bg-surface-container-high focus:shadow-focus-ring transition-colors font-label-md text-label-md flex items-center justify-center gap-3 px-8 py-4 focus:outline-none" id="skip-btn">
+            Skip for now
+          </button>
+          <button class="w-full md:w-auto min-h-[64px] min-w-[240px] bg-primary hover:bg-surface-tint focus:shadow-focus-ring text-on-primary rounded-2xl flex items-center justify-center gap-3 shadow-card transition-colors active:scale-[0.98] px-10 disabled:bg-outline-variant disabled:text-on-surface-variant disabled:shadow-none focus:outline-none" disabled id="continue-btn">
+            <span class="font-headline-md text-headline-md">Continue</span>
+            <span class="material-symbols-outlined text-[32px]">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="af-footer"></div>
+
+<script src="shared.js"></script>
+<script>
+  (function pageInit() {
+    // Guard: must be logged in + not yet onboarded (shared.js handles redirect logic)
+    if (window.AF.guardAuth('onboarding')) return;
+
+    // Render chrome (pass a pageKey that isn't in nav — header will render nav links but none active)
+    window.AF.renderHeader(null);
+    window.AF.renderFooter();
+
+    const BASE_UNSELECTED = "accessibility-card w-full text-left bg-surface hover:bg-surface-container-high rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-2 border-border-soft focus:outline-none focus:shadow-focus-ring shadow-card";
+    const BASE_SELECTED = "accessibility-card w-full text-left bg-primary-container rounded-2xl p-7 flex flex-col items-start gap-5 transition-all active:scale-[0.98] relative overflow-hidden border-[3px] border-primary focus:outline-none focus:shadow-focus-ring shadow-selected-card";
+
+    const cards = document.querySelectorAll('.accessibility-card');
+    const continueBtn = document.getElementById('continue-btn');
+    const skipBtn = document.getElementById('skip-btn');
+    const selected = new Set();
+
+    function updateContinueState() {
+      continueBtn.disabled = selected.size === 0;
+    }
+
+    cards.forEach(card => {
+      card.addEventListener('click', () => {
+        const profile = card.getAttribute('data-profile');
+        const isSelected = card.getAttribute('aria-pressed') === 'true';
+        const badge = card.querySelector('.check-badge');
+        const icon = card.querySelector('.card-icon');
+        const title = card.querySelector('.card-title');
+        const desc = card.querySelector('.card-desc');
+
+        if (isSelected) {
+          card.setAttribute('aria-pressed', 'false');
+          card.className = BASE_UNSELECTED;
+          badge.classList.replace('flex', 'hidden');
+          icon.className = "card-icon material-symbols-outlined text-[44px] text-primary mt-1";
+          title.className = "card-title font-body-lg text-body-lg font-bold text-on-surface";
+          desc.className = "card-desc font-body-md text-body-md text-on-surface-variant";
+          selected.delete(profile);
+        } else {
+          card.setAttribute('aria-pressed', 'true');
+          card.className = BASE_SELECTED;
+          badge.classList.replace('hidden', 'flex');
+          icon.className = "card-icon material-symbols-outlined text-[44px] text-on-primary-container mt-1";
+          title.className = "card-title font-body-lg text-body-lg font-bold text-on-primary-container";
+          desc.className = "card-desc font-body-md text-body-md text-on-primary-container opacity-95";
+          selected.add(profile);
+        }
+
+        updateContinueState();
+      });
+    });
+
+    function finishOnboarding() {
+      const profiles = Array.from(selected);
+      const next = window.AF.completeOnboarding(profiles);
+      location.href = window.AF.url(next);
+    }
+
+    continueBtn.addEventListener('click', finishOnboarding);
+    skipBtn.addEventListener('click', finishOnboarding);
+  })();
+</script>
+
+</body>
+</html>

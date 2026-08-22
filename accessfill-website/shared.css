@@ -1,0 +1,127 @@
+/* ================================================================
+   AccessFill — shared.css
+   Single source of truth for design tokens + motion + global chrome.
+   Every page in the site imports this.
+================================================================= */
+
+/* ---------- Base ---------- */
+@layer base {
+  html, body { margin: 0; padding: 0; }
+  body { overscroll-behavior: none; }
+  main > :first-child { margin-top: 0 !important; }
+  main > :last-child { margin-bottom: 0 !important; }
+}
+::-webkit-scrollbar { display: none; }
+
+/* ---------- Motion guards (prefers-reduced-motion AND user toggle) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-ping, .animate-pulse, .animate-bounce, .animate-spin { animation: none !important; }
+  .group-hover\:scale-105:hover, .group-hover\:scale-110:hover { transform: none !important; }
+  .group-hover\:gap-4:hover { gap: 0.75rem !important; }
+  .active\:scale-\[0\.98\]:active { transform: none !important; }
+  .hover\:shadow-md:hover, .hover\:shadow-lg:hover { box-shadow: none !important; }
+  /* Voice-flow status pulses */
+  .mic-pulse-ring, .mic-pulse-ring-2, .mic-bounce, .bar-wave > * { animation: none !important; }
+}
+body.no-anim *,
+body.no-anim *::before,
+body.no-anim *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+body.no-anim .animate-ping,
+body.no-anim .animate-pulse,
+body.no-anim .animate-bounce,
+body.no-anim .animate-spin,
+body.no-anim .mic-pulse-ring,
+body.no-anim .mic-pulse-ring-2,
+body.no-anim .mic-bounce,
+body.no-anim .bar-wave > * { animation: none !important; }
+body.no-anim .active\:scale-\[0\.98\]:active { transform: none !important; }
+body.no-anim .group-hover\:scale-105:hover,
+body.no-anim .group-hover\:scale-110:hover { transform: none !important; }
+
+/* ---------- Voice-flow mic pulses (status-essential, allowed only when anim ON) ---------- */
+@keyframes micPulse {
+  0%   { transform: scale(1);   opacity: 0.45; }
+  70%  { transform: scale(1.6); opacity: 0;    }
+  100% { transform: scale(1.6); opacity: 0;    }
+}
+@keyframes micPulse2 {
+  0%   { transform: scale(1);   opacity: 0.30; }
+  50%  { transform: scale(1.85); opacity: 0;   }
+  100% { transform: scale(1.85); opacity: 0;   }
+}
+@keyframes micBounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+@keyframes barWave {
+  0%   { height: 20%; }
+  50%  { height: 100%; }
+  100% { height: 30%; }
+}
+.mic-pulse-ring   { animation: micPulse  1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.mic-pulse-ring-2 { animation: micPulse2 2.4s cubic-bezier(0, 0, 0.2, 1) infinite 0.3s; }
+.mic-bounce       { animation: micBounce 0.9s ease-in-out infinite; }
+.bar-wave > *     { animation: barWave 0.9s ease-in-out infinite alternate; }
+.bar-wave > *:nth-child(1) { animation-delay: -0.9s; }
+.bar-wave > *:nth-child(2) { animation-delay: -0.7s; }
+.bar-wave > *:nth-child(3) { animation-delay: -0.5s; }
+.bar-wave > *:nth-child(4) { animation-delay: -0.3s; }
+.bar-wave > *:nth-child(5) { animation-delay: -0.1s; }
+
+/* ---------- Settings toggles (custom because Tailwind peer only works in same parent) ---------- */
+.tog-track { transition: background-color 0.2s ease, border-color 0.2s ease; }
+.tog-thumb { transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease; }
+.tog-peer:checked + .tog-wrap .tog-thumb { transform: translateX(32px); }
+
+/* ---------- Accessibility preference: SIMPLIFIED UI ---------- */
+html[data-simplified-ui="on"] .simplified-hide { display: none !important; }
+
+/* ---------- Accessibility preference: HIGH / EXTRA-HIGH CONTRAST ---------- */
+/* Our default palette is already high-contrast — these modes push it even higher. */
+html[data-contrast="high"] {
+  --af-bg: #FFFBF4;
+  --af-fg: #0B1220;
+  --af-muted: #2A3547;
+  --af-border: #6B7280;
+}
+html[data-contrast="high"] body {
+  background: var(--af-bg) !important;
+  color: var(--af-fg) !important;
+}
+html[data-contrast="high"] .text-on-surface-variant,
+html[data-contrast="high"] .text-on-surface-variant\/\* { color: var(--af-muted) !important; }
+html[data-contrast="high"] .border-border-soft,
+html[data-contrast="high"] .border-outline-variant { border-color: var(--af-border) !important; }
+html[data-contrast="high"] .shadow-card {
+  box-shadow: 0 0 0 2px #374151 !important;
+}
+
+html[data-contrast="extra-high"] {
+  --af-bg: #FFFFFF;
+  --af-fg: #000000;
+  --af-muted: #1F2937;
+  --af-border: #000000;
+}
+html[data-contrast="extra-high"] body {
+  background: var(--af-bg) !important;
+  color: var(--af-fg) !important;
+}
+html[data-contrast="extra-high"] .text-on-surface-variant { color: var(--af-muted) !important; }
+html[data-contrast="extra-high"] .border-border-soft,
+html[data-contrast="extra-high"] .border-outline-variant { border-color: #000 !important; }
+html[data-contrast="extra-high"] .shadow-card {
+  box-shadow: 0 0 0 3px #000 !important;
+}
+html[data-contrast="extra-high"] .bg-primary { background-color: #0A3A54 !important; }
+html[data-contrast="extra-high"] .bg-consent { background-color: #1B5038 !important; }

@@ -10,6 +10,7 @@
   ],
   "host_permissions": [
     "<all_urls>",
+    "https://generativelanguage.googleapis.com/*",
     "https://*.supabase.co/*",
     "https://aviioibehxmkjwnoekjt.supabase.co/*"
   ],
