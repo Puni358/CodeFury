@@ -229,31 +229,7 @@
         <div class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
           <div class="flex flex-col gap-6">
 
-            <!-- Voice Guidance -->
-            <div class="flex items-center justify-between gap-6">
-              <div class="flex flex-col gap-1">
-                <div class="flex items-center gap-3">
-                  <span aria-hidden="true" class="w-11 h-11 rounded-xl bg-primary-container border-2 border-primary-container flex items-center justify-center">
-                    <span class="material-symbols-outlined text-on-primary-container text-[26px]">record_voice_over</span>
-                  </span>
-                  <label class="font-headline-md text-headline-md text-on-surface" for="voice-guidance">Voice Guidance</label>
-                </div>
-                <p class="font-body-md text-body-md text-on-surface-variant ml-14">Enable spoken prompts and audio feedback for navigation.</p>
-              </div>
-              <div>
-                <label class="relative inline-flex items-center cursor-pointer min-h-touch-target">
-                  <input class="sr-only tog-peer" id="voice-guidance" name="voice" type="checkbox"/>
-                  <span class="tog-wrap inline-flex items-center">
-                    <span class="tog-track tog-peer:checked:bg-primary tog-peer:checked:border-primary inline-flex h-10 w-[72px] items-center rounded-full border-2 border-outline bg-outline-variant shadow-sm">
-                      <span class="tog-thumb tog-peer:checked:bg-on-primary tog-peer:checked:border-on-primary ml-1 inline-block h-8 w-8 rounded-full border-2 border-outline bg-outline shadow-sm"></span>
-                    </span>
-                  </span>
-                  <span class="ml-4 font-label-md text-label-md text-on-surface sr-only">Toggle Voice Guidance</span>
-                </label>
-              </div>
-            </div>
 
-            <div class="w-full h-[2px] bg-border-soft rounded-full"></div>
 
             <!-- Animations -->
             <div class="flex items-center justify-between gap-6">
@@ -345,7 +321,6 @@
     const fsRadios = form.querySelectorAll('input[name="font-size"]');
     const cRadios = form.querySelectorAll('input[name="contrast"]');
     const langSel = form.querySelector('#language-select');
-    const voiceTog = form.querySelector('#voice-guidance');
     const animTog = form.querySelector('#animations-toggle');
     const simpTog = form.querySelector('#simplified-ui-toggle');
 
@@ -353,7 +328,6 @@
       fontSize: 'medium',
       contrast: 'normal',
       language: 'en',
-      voice: false,
       animations: !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches),
       simplified: false
     };
@@ -362,7 +336,6 @@
       fsRadios.forEach(r => { r.checked = (r.value === p.fontSize); });
       cRadios.forEach(r => { r.checked = (r.value === p.contrast); });
       if (langSel) langSel.value = (p.language === 'kn') ? 'kn' : 'en';
-      if (voiceTog) voiceTog.checked = !!p.voice;
       if (animTog) animTog.checked = !!p.animations;
       if (simpTog) simpTog.checked = !!p.simplified;
     }
@@ -376,7 +349,6 @@
         fontSize,
         contrast,
         language: langSel ? langSel.value : DEFAULTS.language,
-        voice: voiceTog ? voiceTog.checked : DEFAULTS.voice,
         animations: animTog ? animTog.checked : DEFAULTS.animations,
         simplified: simpTog ? simpTog.checked : DEFAULTS.simplified
       };
@@ -420,15 +392,12 @@
     // Load initial prefs
     applyPrefsToForm(window.AF.readPrefs());
 
-    // Live-preview toggles that don't require save confirmation: animations, simplified, contrast, font, language, voice
+    // Live-preview toggles that don't require save confirmation: animations, simplified, contrast, font, language
     animTog.addEventListener('change', () => {
       window.AF.savePrefs({ animations: animTog.checked });
     });
     simpTog.addEventListener('change', () => {
       window.AF.savePrefs({ simplified: simpTog.checked });
-    });
-    voiceTog.addEventListener('change', () => {
-      window.AF.savePrefs({ voice: voiceTog.checked });
     });
     fsRadios.forEach(r => r.addEventListener('change', () => {
       window.AF.savePrefs({ fontSize: r.value });

@@ -508,18 +508,145 @@
       return val;
     }
 
-    // Speech Recognition setup
+    // ─── ANTIGRAVITY SELF-CHECK ──────────────────────────────────────────────
+    // Runs once on page load and logs a full environment report to the console
+    // so you can see exactly what's available before touching the mic button.
+    (function runAntigravitySelfCheck() {
+      const SpeechRecCheck = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const report = {
+        '1_speechRecognition_available': !!SpeechRecCheck,
+        '2_typeof_SpeechRecognition': typeof window.SpeechRecognition,
+        '3_typeof_webkitSpeechRecognition': typeof window.webkitSpeechRecognition,
+        '4_isSecureContext': window.isSecureContext,
+        '5_protocol': window.location.protocol,
+        '6_hostname': window.location.hostname,
+        '7_fullUrl': window.location.href,
+        '8_AudioContext_available': !!(window.AudioContext || window.webkitAudioContext),
+        '9_speechSynthesis_available': !!window.speechSynthesis,
+        '10_userAgent': navigator.userAgent,
+        '11_mediaDevices_available': !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+      };
+
+      if (!SpeechRecCheck) {
+        console.error(
+          '%c[AccessFill ANTIGRAVITY] ❌ SpeechRecognition NOT available — voice input will not work.',
+          'color: red; font-weight: bold;',
+          report
+        );
+      } else {
+        console.log(
+          '%c[AccessFill ANTIGRAVITY] ✅ SpeechRecognition IS available — environment looks good.',
+          'color: green; font-weight: bold;',
+          report
+        );
+      }
+
+      if (!window.isSecureContext) {
+        console.error(
+          '%c[AccessFill ANTIGRAVITY] ❌ Page is NOT in a secure context (isSecureContext=false). ' +
+          'Microphone access requires HTTPS or localhost. Current URL: ' + window.location.href,
+          'color: red; font-weight: bold;'
+        );
+      }
+
+      if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+        console.warn(
+          '%c[AccessFill ANTIGRAVITY] ⚠️  navigator.mediaDevices.getUserMedia is not available. ' +
+          'This is expected on non-secure contexts and will block mic access.',
+          'color: orange; font-weight: bold;'
+        );
+      }
+    })();
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Web Audio API Beep Generator
+    async function playBeepSound() {
+      console.log('[AccessFill Voice] playBeepSound() → starting');
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) {
+          console.warn('[AccessFill Voice] playBeepSound() → AudioContext not available, skipping beep');
+          return;
+        }
+        const ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+          console.log('[AccessFill Voice] playBeepSound() → AudioContext suspended, calling resume()');
+          await ctx.resume().catch((e) => {
+            console.warn('[AccessFill Voice] playBeepSound() → ctx.resume() failed:', e);
+          });
+        }
+        console.log('[AccessFill Voice] playBeepSound() → AudioContext state after resume:', ctx.state);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+        await new Promise(r => setTimeout(r, 180));
+        ctx.close().catch(() => {});
+        console.log('[AccessFill Voice] playBeepSound() → beep done ✅');
+      } catch (e) {
+        console.warn('[AccessFill Voice] playBeepSound() → exception (non-fatal, continuing):', e);
+      }
+    }
+
+    // Speech Recognition feature detection — captured once at init time
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    function startListening() {
+    console.log('[AccessFill Voice] SpeechRecognition feature check at init:', {
+      isAvailable: !!SpeechRec,
+      typeofSpeechRecognition: typeof window.SpeechRecognition,
+      typeofWebkitSpeechRecognition: typeof window.webkitSpeechRecognition,
+      isSecureContext: window.isSecureContext,
+      protocol: window.location.protocol,
+      hostname: window.location.hostname,
+    });
+
+    async function startListening() {
+      console.log('[AccessFill Voice] startListening() → called');
+
+      // Step 1: Stop any currently playing TTS so mic isn't drowned out
+      try {
+        if (window.AF && typeof window.AF.stopTtsState === 'function') {
+          window.AF.stopTtsState();
+          console.log('[AccessFill Voice] startListening() → TTS stopped ✅');
+        }
+      } catch (ttsErr) {
+        console.warn('[AccessFill Voice] startListening() → error stopping TTS (non-fatal):', ttsErr);
+      }
+
+      // Step 2: Play start-beep via Web Audio API
+      // If this throws or hangs, recognition.start() will never be reached —
+      // that's why it's wrapped in its own try/catch above with await.
+      console.log('[AccessFill Voice] startListening() → about to await playBeepSound()');
+      try {
+        await playBeepSound();
+      } catch (beepErr) {
+        // Should never reach here because playBeepSound() catches internally,
+        // but guard anyway so execution always continues.
+        console.warn('[AccessFill Voice] startListening() → playBeepSound() outer catch (non-fatal):', beepErr);
+      }
+      console.log('[AccessFill Voice] startListening() → playBeepSound() awaited ✅');
+
+      // Step 3: Reset state and update UI
       capturedTranscript = '';
       transitionToState('state-b');
       livePreviewEl.textContent = activeLang === 'kn' ? 'ಸ್ಪಷ್ಟವಾಗಿ ಮಾತನಾಡಿ...' : 'Speak clearly. Tap mic button when done.';
 
+      // Step 4: Check SpeechRecognition availability
       if (!SpeechRec) {
+        console.error('[AccessFill Voice] startListening() → SpeechRecognition unavailable. Falling back to manual prompt.', {
+          typeofSpeechRecognition: typeof window.SpeechRecognition,
+          typeofWebkitSpeechRecognition: typeof window.webkitSpeechRecognition,
+          isSecureContext: window.isSecureContext,
+        });
         livePreviewEl.textContent = activeLang === 'kn'
           ? 'ನಿಮ್ಮ ಬ್ರೌಸರ್ ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆಯನ್ನು ಬೆಂಬಲಿಸುವುದಿಲ್ಲ — ದಯವಿಟ್ಟು ಟೈಪ್ ಮಾಡಿ'
-          : 'Voice recognition not supported in this browser. Showing manual input.';
+          : 'Voice recognition not supported in this browser — please type your answer.';
         setTimeout(() => {
           capturedTranscript = prompt(FIELDS[currentFieldIndex].prompt[activeLang] || FIELDS[currentFieldIndex].prompt.en) || '';
           processCapturedVoice(capturedTranscript);
@@ -527,18 +654,48 @@
         return;
       }
 
+      // Step 5: Abort any previous recognition instance
+      if (recognition) {
+        console.log('[AccessFill Voice] startListening() → aborting previous recognition instance');
+        try { recognition.abort(); } catch (_) {}
+      }
+
+      // Step 6: Create and configure new recognition instance
       try {
-        if (recognition) { recognition.abort(); }
         recognition = new SpeechRec();
         recognition.lang = activeLang === 'kn' ? 'kn-IN' : 'en-US';
         recognition.continuous = false;
         recognition.interimResults = true;
+        console.log('[AccessFill Voice] startListening() → recognition configured', {
+          lang: recognition.lang,
+          continuous: recognition.continuous,
+          interimResults: recognition.interimResults,
+        });
+
+        recognition.onstart = () => {
+          console.log('%c[AccessFill Voice] ✅ recognition.onstart fired — browser has opened the mic',
+            'color: green; font-weight: bold;', { msg: 'speech_recognition_started' });
+          isListening = true;
+        };
+
+        recognition.onaudiostart = () => {
+          console.log('[AccessFill Voice] recognition.onaudiostart fired — audio capture has begun', { msg: 'audio_capture_started' });
+        };
+
+        recognition.onsoundstart = () => {
+          console.log('[AccessFill Voice] recognition.onsoundstart fired — sound detected', { msg: 'sound_detected' });
+        };
+
+        recognition.onspeechstart = () => {
+          console.log('[AccessFill Voice] recognition.onspeechstart fired — speech detected', { msg: 'speech_detected' });
+        };
 
         recognition.onresult = (e) => {
           let interim = '';
           for (let i = e.resultIndex; i < e.results.length; ++i) {
             if (e.results[i].isFinal) {
               capturedTranscript += e.results[i][0].transcript;
+              console.log('[AccessFill Voice] recognition.onresult → final segment:', e.results[i][0].transcript);
             } else {
               interim += e.results[i][0].transcript;
             }
@@ -547,40 +704,80 @@
         };
 
         recognition.onerror = (err) => {
-          console.warn('[AccessFill Voice] recognition error:', err);
+          const errType = (err && err.error) || 'unknown_error';
+          console.error('%c[AccessFill Voice] ❌ recognition.onerror fired',
+            'color: red; font-weight: bold;', {
+              msg: 'speech_recognition_error',
+              error: errType,
+              // Common errors and what they mean:
+              // 'not-allowed'      → mic permission denied (or non-secure context)
+              // 'no-speech'        → mic opened but no speech detected within timeout
+              // 'network'          → network required but unavailable (Chrome needs internet for its STT server)
+              // 'aborted'          → recognition.abort() was called
+              // 'audio-capture'    → no mic found / mic hardware error
+              // 'service-not-allowed' → browser policy blocks recognition on this origin
+            });
+
+          // Surface the error in the UI so it's visible without opening DevTools
+          livePreviewEl.textContent = `⚠️ Mic error: ${errType}. Check console for details.`;
           stopListening();
         };
 
         recognition.onend = () => {
+          console.log('[AccessFill Voice] recognition.onend fired', {
+            msg: 'speech_recognition_ended',
+            capturedTranscript,
+            isListening,
+          });
           isListening = false;
           processCapturedVoice(capturedTranscript);
         };
 
-        isListening = true;
+        // Step 7: Actually call start() — THIS is the point that triggers the browser mic prompt
+        console.log('%c[AccessFill Voice] → About to call recognition.start()',
+          'color: blue; font-weight: bold;', { msg: 'speech_recognition_starting' });
         recognition.start();
+        console.log('%c[AccessFill Voice] → recognition.start() returned (synchronously) — waiting for onstart callback',
+          'color: blue; font-weight: bold;', { msg: 'speech_recognition_start_called' });
+
       } catch (err) {
-        console.error('[AccessFill Voice] start failed:', err);
-        processCapturedVoice('');
+        console.error('%c[AccessFill Voice] ❌ recognition.start() threw a synchronous exception — this is the likely root cause',
+          'color: red; font-weight: bold;', {
+            msg: 'speech_recognition_exception',
+            error: err && err.message,
+            name: err && err.name,
+            stack: err && err.stack,
+          });
+        livePreviewEl.textContent = `⚠️ Could not start mic: ${err && err.message || err}`;
+        transitionToState('state-a');
       }
     }
 
     function stopListening() {
+      console.log('[AccessFill Voice] stopListening() → called', { isListening });
       if (recognition && isListening) {
         isListening = false;
-        try { recognition.stop(); } catch (_) {}
+        try {
+          recognition.stop();
+          console.log('[AccessFill Voice] stopListening() → recognition.stop() called');
+        } catch (e) {
+          console.warn('[AccessFill Voice] stopListening() → recognition.stop() threw:', e);
+        }
       }
     }
 
     function processCapturedVoice(rawText) {
+      console.log('[AccessFill Voice] processCapturedVoice() → rawText:', rawText);
       transitionToState('state-c');
       setTimeout(() => {
         const field = FIELDS[currentFieldIndex];
         const formatted = formatSpokenValue(rawText || field.sample, field.type);
+        console.log('[AccessFill Voice] processCapturedVoice() → formatted:', formatted, '| field type:', field.type);
         reviewInputEl.value = formatted || rawText || field.sample;
 
         transitionToState('state-d');
 
-        // Optional confirmation read aloud
+        // Read back the captured value for confirmation
         const speakConfirm = activeLang === 'kn'
           ? `ನೀವು ${formatted || rawText} ಎಂದಿದ್ದೀರಾ? ದೃಢೀಕರಿಸಿ.`
           : `You said ${formatted || rawText}. Please confirm to save.`;
@@ -588,18 +785,25 @@
       }, 900);
     }
 
-    startMicBtn.addEventListener('click', startListening);
+    startMicBtn.addEventListener('click', () => {
+      console.log('[AccessFill Voice] Mic button clicked → calling startListening()');
+      startListening();
+    });
+
     stopMicBtn.addEventListener('click', () => {
+      console.log('[AccessFill Voice] Stop button clicked → calling stopListening()');
       stopListening();
     });
 
     tryAgainBtn.addEventListener('click', () => {
+      console.log('[AccessFill Voice] Try-again clicked → resetting to state-a');
       renderCurrentField();
     });
 
     confirmSaveBtn.addEventListener('click', async () => {
       const field = FIELDS[currentFieldIndex];
       const finalVal = reviewInputEl.value.trim();
+      console.log('[AccessFill Voice] confirmSaveBtn clicked → saving field:', field.key, 'value:', finalVal);
 
       confirmSaveBtn.disabled = true;
       const patch = { [field.key]: finalVal };
@@ -608,10 +812,12 @@
       confirmSaveBtn.disabled = false;
 
       if (!result.success) {
+        console.error('[AccessFill Voice] Save failed:', result.error);
         alert('Save failed: ' + (result.error || 'Unknown error'));
         return;
       }
 
+      console.log('[AccessFill Voice] Save succeeded for field:', field.key);
       currentProfile[field.key] = finalVal;
       savedLabelEl.textContent = (activeLang === 'kn' ? 'ಸೇವ್ ಮಾಡಲಾಗಿದೆ: ' : 'Saved: ') + (finalVal || 'Done');
       transitionToState('state-e');

@@ -307,7 +307,7 @@
       <div class="w-7 h-7 rounded-lg bg-primary-container flex items-center justify-center">
         <span class="material-symbols-outlined text-on-primary-container text-[16px]" style="font-variation-settings: 'FILL' 1;">featured_seasonal_and_gifts</span>
       </div>
-      <span>© 2024 AccessFill. Built for everyone.</span>
+      <span>© 2026 AccessFill. Built for everyone.</span>
     </div>
     <div class="flex gap-10">
       <a class="hover:text-primary transition-colors underline-offset-4 hover:underline" href="#">Privacy</a>
