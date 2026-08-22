@@ -63,6 +63,64 @@
     return text ? (status ? `HTTP ${status}: ${text}` : text) : ('HTTP ' + status);
   }
 
+  function decodeJwtPayload(token) {
+    if (!token || typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+      const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const pad = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+      return JSON.parse(atob(pad));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function jwtExpiryUnix(token) {
+    const payload = decodeJwtPayload(token);
+    const exp = payload && Number(payload.exp);
+    return exp > 0 ? exp : null;
+  }
+
+  function isJwtAuthError(status, data) {
+    if (status !== 401 && status !== 403) return false;
+    const code = String((data && (data.code || data.error_code || data.error)) || '');
+    const blob = JSON.stringify(data || {}).toLowerCase();
+    return code === 'UNAUTHORIZED_ASYMMETRIC_JWT'
+      || blob.indexOf('unauthorized_asymmetric_jwt') >= 0
+      || blob.indexOf('invalid jwt') >= 0
+      || blob.indexOf('invalid_jwt') >= 0
+      || code === 'PGRST301';
+  }
+
+  function loginPageUrl(reason) {
+    const path = (typeof location !== 'undefined' && location.pathname) || '';
+    const lastSlash = path.lastIndexOf('/');
+    const base = lastSlash >= 0 ? path.slice(0, lastSlash + 1) : '/';
+    const q = reason ? ('?reason=' + encodeURIComponent(reason)) : '';
+    return base + 'login.html' + q;
+  }
+
+  function isOnLoginPage() {
+    const path = ((typeof location !== 'undefined' && location.pathname) || '').toLowerCase();
+    return path.indexOf('login.html') >= 0 || /\/login\/?$/.test(path);
+  }
+
+  function sessionFromAuthPayload(data, previous) {
+    const access = data && data.access_token;
+    const now = Math.floor(Date.now() / 1000);
+    const jwtExp = jwtExpiryUnix(access);
+    const expiresIn = Number(data && data.expires_in) || (jwtExp ? Math.max(1, jwtExp - now) : 3600);
+    return {
+      access_token: access,
+      refresh_token: (data && data.refresh_token) || (previous && previous.refresh_token) || null,
+      expires_in: expiresIn,
+      expires_at: jwtExp || (now + expiresIn),
+      token_type: (data && data.token_type) || 'bearer',
+      user: (data && data.user) || (previous && previous.user) || null
+    };
+  }
+
   const DEFAULT_MOCK_PROFILE = {
     user_id: "demo-user-123",
     full_name: "Aarav Sharma",
@@ -150,6 +208,8 @@
       this.isDemoMode = false;
       this.rememberMe = true;
       this._initPromise = null;
+      this._refreshPromise = null;
+      this._jwtRedirecting = false;
     }
 
     async init() {
@@ -168,6 +228,10 @@
 
         if (!this.isDemoMode && isLiveConfigured) {
           try {
+            await this.getValidAccessToken();
+            if (this._jwtRedirecting) {
+              return { session: null, profile: null, isDemoMode: false };
+            }
             this.profile = await this.fetchFullUserProfileRLS();
           } catch (_) {
             this.profile = stored.userProfile || null;
@@ -215,12 +279,7 @@
           }
 
           if (data.access_token) {
-            this.session = {
-              access_token: data.access_token,
-              refresh_token: data.refresh_token,
-              expires_in: data.expires_in,
-              user: data.user
-            };
+            this.session = sessionFromAuthPayload(data, null);
             this.isDemoMode = false;
 
             await this.saveFullUserProfileRLS({
@@ -267,12 +326,7 @@
             return { success: false, error: errMsg };
           }
 
-          this.session = {
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-            expires_in: data.expires_in,
-            user: data.user
-          };
+          this.session = sessionFromAuthPayload(data, null);
           this.isDemoMode = false;
           this.profile = await this.fetchFullUserProfileRLS();
           this._persist();
@@ -307,11 +361,9 @@
       if (String(this.session.access_token).indexOf('mock-') === 0) return null;
 
       try {
-        const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/profiles?select=*`, {
+        const response = await this.apiFetch(`${SUPABASE_CONFIG.url}/rest/v1/profiles?select=*`, {
           method: 'GET',
           headers: {
-            'apikey': SUPABASE_CONFIG.anonKey,
-            'Authorization': `Bearer ${this.session.access_token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
@@ -320,6 +372,12 @@
         if (response.ok) {
           const rows = await response.json();
           if (Array.isArray(rows) && rows.length > 0) return rows[0];
+        } else {
+          const errBody = await response.json().catch(() => null);
+          console.warn("[AccessFill Supabase] profiles table fetch failed", {
+            status: response.status,
+            code: errBody && errBody.code
+          });
         }
       } catch (err) {
         console.warn("[AccessFill Supabase] profiles table fetch error:", err.message);
@@ -332,11 +390,9 @@
       if (String(this.session.access_token).indexOf('mock-') === 0) return null;
 
       try {
-        const response = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/sensitive_ids?select=*`, {
+        const response = await this.apiFetch(`${SUPABASE_CONFIG.url}/rest/v1/sensitive_ids?select=*`, {
           method: 'GET',
           headers: {
-            'apikey': SUPABASE_CONFIG.anonKey,
-            'Authorization': `Bearer ${this.session.access_token}`,
             'Content-Type': 'application/json',
             'Accept': 'application/json'
           }
@@ -345,6 +401,12 @@
         if (response.ok) {
           const rows = await response.json();
           if (Array.isArray(rows) && rows.length > 0) return rows[0];
+        } else {
+          const errBody = await response.json().catch(() => null);
+          console.warn("[AccessFill Supabase] sensitive_ids table fetch failed", {
+            status: response.status,
+            code: errBody && errBody.code
+          });
         }
       } catch (err) {
         console.warn("[AccessFill Supabase] sensitive_ids table fetch error:", err.message);
@@ -421,11 +483,9 @@
       let sensitiveOk = false;
 
       try {
-        const res1 = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/profiles?on_conflict=user_id`, {
+        const res1 = await this.apiFetch(`${SUPABASE_CONFIG.url}/rest/v1/profiles?on_conflict=user_id`, {
           method: 'POST',
           headers: {
-            'apikey': SUPABASE_CONFIG.anonKey,
-            'Authorization': `Bearer ${this.session.access_token}`,
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates,return=representation'
           },
@@ -451,11 +511,9 @@
       }
 
       try {
-        const res2 = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/sensitive_ids?on_conflict=user_id`, {
+        const res2 = await this.apiFetch(`${SUPABASE_CONFIG.url}/rest/v1/sensitive_ids?on_conflict=user_id`, {
           method: 'POST',
           headers: {
-            'apikey': SUPABASE_CONFIG.anonKey,
-            'Authorization': `Bearer ${this.session.access_token}`,
             'Content-Type': 'application/json',
             'Prefer': 'resolution=merge-duplicates,return=representation'
           },
@@ -508,8 +566,129 @@
       this.profile = null;
       this.isDemoMode = false;
       this._initPromise = null;
+      this._refreshPromise = null;
       clearPersistedAuth();
       return { success: true };
+    }
+
+    _clearLocalSessionOnly() {
+      this.session = null;
+      this.profile = null;
+      this.isDemoMode = false;
+      this._initPromise = null;
+      this._refreshPromise = null;
+      clearPersistedAuth();
+    }
+
+    redirectForInvalidJwt() {
+      if (this._jwtRedirecting || this.isDemoMode) return;
+      if (isOnLoginPage()) {
+        this._clearLocalSessionOnly();
+        return;
+      }
+      this._jwtRedirecting = true;
+      console.warn('[AccessFill Auth] invalid JWT — clearing local session and redirecting to sign-in');
+      this._clearLocalSessionOnly();
+      try {
+        location.replace(loginPageUrl('jwt'));
+      } catch (_) {}
+    }
+
+    async refreshSession() {
+      if (this.isDemoMode || !isLiveConfigured) return false;
+      if (!this.session || !this.session.refresh_token) return false;
+      if (String(this.session.access_token || '').indexOf('mock-') === 0) return false;
+      if (this._refreshPromise) return this._refreshPromise;
+
+      this._refreshPromise = (async () => {
+        console.log('[AccessFill Auth] POST /auth/v1/token?grant_type=refresh_token');
+        try {
+          const response = await fetch(SUPABASE_CONFIG.url + '/auth/v1/token?grant_type=refresh_token', {
+            method: 'POST',
+            headers: {
+              'apikey': SUPABASE_CONFIG.anonKey,
+              'Authorization': 'Bearer ' + SUPABASE_CONFIG.anonKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refresh_token: this.session.refresh_token })
+          });
+          const data = await response.json().catch(() => null);
+          if (!response.ok || !data || !data.access_token) {
+            console.warn('[AccessFill Auth] refresh failed', { status: response.status, code: data && data.code });
+            if (isJwtAuthError(response.status, data)) return false;
+            return false;
+          }
+          this.session = sessionFromAuthPayload(data, this.session);
+          this._persist();
+          console.log('[AccessFill Auth] session refreshed');
+          return true;
+        } catch (err) {
+          console.warn('[AccessFill Auth] refresh network error:', sanitizeLogPayload(err));
+          return false;
+        } finally {
+          this._refreshPromise = null;
+        }
+      })();
+
+      return this._refreshPromise;
+    }
+
+    /**
+     * Equivalent of supabase.auth.getSession() + auto-refresh:
+     * never reuse an expired access token on REST / Edge Function calls.
+     */
+    async getValidAccessToken(options) {
+      const forceRefresh = options && options.forceRefresh;
+      if (this.isDemoMode || !this.session || !this.session.access_token) return null;
+      if (String(this.session.access_token).indexOf('mock-') === 0) return null;
+
+      const now = Math.floor(Date.now() / 1000);
+      const exp = Number(this.session.expires_at) || jwtExpiryUnix(this.session.access_token);
+      const nearExpiry = !exp || (exp - now) < 60;
+
+      if (forceRefresh || nearExpiry) {
+        const ok = await this.refreshSession();
+        if (!ok && (forceRefresh || (exp && exp <= now))) {
+          this.redirectForInvalidJwt();
+          return null;
+        }
+      }
+      return this.session && this.session.access_token;
+    }
+
+    async apiFetch(url, init) {
+      init = init || {};
+      const extra = init.headers || {};
+      const send = async (forceRefresh) => {
+        const token = await this.getValidAccessToken({ forceRefresh: !!forceRefresh });
+        if (!token) {
+          return null;
+        }
+        const headers = Object.assign({
+          'apikey': SUPABASE_CONFIG.anonKey,
+          'Authorization': 'Bearer ' + token
+        }, extra);
+        return fetch(url, Object.assign({}, init, { headers: headers }));
+      };
+
+      let res = await send(false);
+      if (!res) return { ok: false, status: 401, json: async () => ({ error: 'no_session' }) };
+      if (res.status !== 401 && res.status !== 403) return res;
+
+      const firstBody = await res.clone().json().catch(() => null);
+      if (!isJwtAuthError(res.status, firstBody)) return res;
+
+      console.warn('[AccessFill Auth] JWT rejected, retrying once after refresh', {
+        status: res.status,
+        code: firstBody && firstBody.code
+      });
+      res = await send(true);
+      if (!res) return { ok: false, status: 401, json: async () => firstBody || ({ error: 'no_session' }) };
+      if (res.status === 401 || res.status === 403) {
+        const secondBody = await res.clone().json().catch(() => null);
+        if (isJwtAuthError(res.status, secondBody)) this.redirectForInvalidJwt();
+      }
+      return res;
     }
 
     getDisplayName() {
@@ -591,12 +770,12 @@
       console.log("[AccessFill Storage] upload start", { bucket: 'id-documents', pathShape: '<user_id>/<filename>' });
 
       try {
-        const res = await fetch(SUPABASE_CONFIG.url + '/storage/v1/object/id-documents/' + encodedPath, {
+        const res = await this.apiFetch(SUPABASE_CONFIG.url + '/storage/v1/object/id-documents/' + encodedPath, {
           method: 'POST',
-          headers: this._authHeaders({
+          headers: {
             'Content-Type': (file && file.type) || 'application/octet-stream',
             'x-upsert': 'false'
-          }),
+          },
           body: file
         });
         const data = await res.json().catch(() => null);
@@ -620,9 +799,9 @@
       }
       console.log("[AccessFill Extract] invoking extract-id-document");
       try {
-        const res = await fetch(SUPABASE_CONFIG.url + '/functions/v1/extract-id-document', {
+        const res = await this.apiFetch(SUPABASE_CONFIG.url + '/functions/v1/extract-id-document', {
           method: 'POST',
-          headers: this._authHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ storage_path: storagePath })
         });
         const data = await res.json().catch(() => null);
@@ -661,9 +840,9 @@
         return { success: false, demo: true, error: 'explain_skipped_demo' };
       }
       try {
-        const res = await fetch(SUPABASE_CONFIG.url + '/functions/v1/explain-form-field', {
+        const res = await this.apiFetch(SUPABASE_CONFIG.url + '/functions/v1/explain-form-field', {
           method: 'POST',
-          headers: this._authHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ field_key: key, field_label: label, language: lang })
         });
         const data = await res.json().catch(() => null);
@@ -693,9 +872,9 @@
         return { success: false, demo: true, error: 'tts_skipped_demo' };
       }
       try {
-        const res = await fetch(SUPABASE_CONFIG.url + '/functions/v1/text-to-speech', {
+        const res = await this.apiFetch(SUPABASE_CONFIG.url + '/functions/v1/text-to-speech', {
           method: 'POST',
-          headers: this._authHeaders({ 'Content-Type': 'application/json' }),
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: clipped, language: lang })
         });
         const data = await res.json().catch(() => null);
@@ -746,12 +925,12 @@
       console.log("[AccessFill Documents] insert uploaded_documents", { keys: Object.keys(extractedFields || {}) });
 
       try {
-        const res = await fetch(SUPABASE_CONFIG.url + '/rest/v1/uploaded_documents', {
+        const res = await this.apiFetch(SUPABASE_CONFIG.url + '/rest/v1/uploaded_documents', {
           method: 'POST',
-          headers: this._authHeaders({
+          headers: {
             'Content-Type': 'application/json',
             'Prefer': 'return=representation'
-          }),
+          },
           body: JSON.stringify(payload)
         });
         const data = await res.json().catch(() => null);
@@ -781,12 +960,12 @@
 
       console.log("[AccessFill Documents] confirm uploaded_documents");
       try {
-        const res = await fetch(SUPABASE_CONFIG.url + '/rest/v1/uploaded_documents?id=eq.' + encodeURIComponent(id), {
+        const res = await this.apiFetch(SUPABASE_CONFIG.url + '/rest/v1/uploaded_documents?id=eq.' + encodeURIComponent(id), {
           method: 'PATCH',
-          headers: this._authHeaders({
+          headers: {
             'Content-Type': 'application/json',
             'Prefer': 'return=representation'
-          }),
+          },
           body: JSON.stringify({
             confirmed: true,
             extracted_fields: extractedFields,

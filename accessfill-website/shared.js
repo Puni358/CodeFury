@@ -19,6 +19,7 @@
     savedInfo:   'saved-info.html',
     uploadDocs:  'upload-documents.html',
     voiceFlow:   'voice-guidance.html',
+    voiceFill:   'voice-fill.html',
   };
 
   function url(pageKey) {
@@ -344,9 +345,9 @@
                                              so each call-site has its own audio element
                                              (prevents field-explain and chat clobbering each other)
 
-     Returns a Promise that resolves when playback has started (or fallen
-     back to browser speech). Callers do not need to await it for UX purposes
-     but may if they want sequential behaviour.
+     Returns a Promise that resolves when playback has finished (or fallen
+     back to browser speech and that utterance ended). Callers that need
+     sequential behaviour (prompt, then listen) should await it.
   ================================================================ */
 
   // Shared voice-loading promise — avoids multiple concurrent voiceschanged waits
@@ -436,26 +437,33 @@
     state.audioUrl = URL.createObjectURL(blob);
     if (!state.audio) state.audio = new Audio();
 
-    const onPlay = function () {
-      state.isPlaying = true;
-      _notifyStateChange(state);
-    };
-    const onEndedOrPause = function () {
-      if (state.isPlaying) {
-        state.isPlaying = false;
-        state.currentText = null;
+    return new Promise(function (resolve) {
+      var settled = false;
+      const finish = function () {
+        if (settled) return;
+        settled = true;
+        if (state.isPlaying) {
+          state.isPlaying = false;
+          state.currentText = null;
+          _notifyStateChange(state);
+        }
+        resolve();
+      };
+
+      state.audio.onplay = function () {
+        state.isPlaying = true;
         _notifyStateChange(state);
-      }
-    };
+      };
+      state.audio.onended = finish;
+      state.audio.onerror = finish;
+      state.audio.onpause = function () {
+        if (state.audio && !state.audio.ended) finish();
+      };
 
-    state.audio.onplay = onPlay;
-    state.audio.onended = onEndedOrPause;
-    state.audio.onpause = onEndedOrPause;
-    state.audio.onerror = onEndedOrPause;
-
-    state.audio.src = state.audioUrl;
-    const p = state.audio.play();
-    if (p && typeof p.catch === 'function') p.catch(function () {});
+      state.audio.src = state.audioUrl;
+      const p = state.audio.play();
+      if (p && typeof p.catch === 'function') p.catch(function () { finish(); });
+    });
   }
 
   // Shared TTS cache — keyed 'lang::text', shared across call-sites because
@@ -487,7 +495,7 @@
     const cacheKey = targetLang + '::' + clipped;
     const cached = _ttsCache[cacheKey];
     if (cached) {
-      _playBlobOnState(state, _b64ToBlob(cached.b64, cached.mime), { btn, text: clipped });
+      await _playBlobOnState(state, _b64ToBlob(cached.b64, cached.mime), { btn, text: clipped });
       return;
     }
 
@@ -498,8 +506,8 @@
         const result = await clientSb.invokeTextToSpeech({ text: clipped, language: targetLang });
         if (result && result.success && result.audioBase64) {
           _ttsCache[cacheKey] = { b64: result.audioBase64, mime: result.mimeType || 'audio/wav' };
-          _playBlobOnState(state, _b64ToBlob(result.audioBase64, result.mimeType), { btn, text: clipped });
           if (onBusy) onBusy(false);
+          await _playBlobOnState(state, _b64ToBlob(result.audioBase64, result.mimeType), { btn, text: clipped });
           return;
         }
         // TTS call succeeded but returned no audio (demo mode, rate limit, etc.)
@@ -551,37 +559,42 @@
       if (enVoice) utt.voice = enVoice;
     }
 
-    utt.onstart = function () {
-      state.isPlaying = true;
-      state.activeBtn = btn;
-      state.currentText = clipped;
-      _notifyStateChange(state);
-    };
-    utt.onend = function () {
-      state.isPlaying = false;
-      state.activeBtn = null;
-      state.currentText = null;
-      _notifyStateChange(state);
-    };
-    utt.onerror = function () {
-      state.isPlaying = false;
-      state.activeBtn = null;
-      state.currentText = null;
-      _notifyStateChange(state);
-    };
+    return new Promise(function (resolve) {
+      utt.onstart = function () {
+        state.isPlaying = true;
+        state.activeBtn = btn;
+        state.currentText = clipped;
+        _notifyStateChange(state);
+      };
+      utt.onend = function () {
+        state.isPlaying = false;
+        state.activeBtn = null;
+        state.currentText = null;
+        _notifyStateChange(state);
+        resolve();
+      };
+      utt.onerror = function () {
+        state.isPlaying = false;
+        state.activeBtn = null;
+        state.currentText = null;
+        _notifyStateChange(state);
+        resolve();
+      };
 
-    try {
-      speechSynthesis.speak(utt);
-    } catch (_) {
-      state.isPlaying = false;
-      state.activeBtn = null;
-      state.currentText = null;
-      _notifyStateChange(state);
-      if (noteEl) {
-        noteEl.hidden = false;
-        noteEl.textContent = 'Voice not available on this device — showing text only';
+      try {
+        speechSynthesis.speak(utt);
+      } catch (_) {
+        state.isPlaying = false;
+        state.activeBtn = null;
+        state.currentText = null;
+        _notifyStateChange(state);
+        if (noteEl) {
+          noteEl.hidden = false;
+          noteEl.textContent = 'Voice not available on this device — showing text only';
+        }
+        resolve();
       }
-    }
+    });
   }
 
   window.AF = {

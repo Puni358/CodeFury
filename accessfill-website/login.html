@@ -357,6 +357,10 @@
       googleBtn.addEventListener('click', () => {
         showError('Google sign-in is not available yet. Please use email and password, or try demo mode.');
       });
+
+      if (window.AF.qs('reason', '') === 'jwt') {
+        showInfo('Your session needs to be refreshed — please sign in again');
+      }
     })();
   </script>
 </body>

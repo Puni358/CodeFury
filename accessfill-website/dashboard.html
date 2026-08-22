@@ -145,6 +145,19 @@
           </div>
         </button>
 
+        <!-- Voice Fill Card (profile fields) -->
+        <button id="btn-voice-fill" class="group flex flex-col items-start p-7 bg-surface rounded-2xl border-2 border-border-soft hover:border-primary transition-all min-h-touch-target focus:outline-none focus:shadow-focus-ring shadow-card hover:shadow-none text-left">
+          <div class="bg-primary-container p-4 rounded-2xl mb-6 border-2 border-primary-container">
+            <span class="material-symbols-outlined text-on-primary-container text-[34px]" style="font-variation-settings: 'FILL' 1;">mic</span>
+          </div>
+          <h2 class="font-headline-md text-headline-md text-on-surface mb-3">🎤 Voice Fill</h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">Speak your saved info one field at a time</p>
+          <div class="mt-auto pt-7 flex items-center gap-3 text-primary">
+            <span class="font-label-md text-label-md">Start speaking</span>
+            <span class="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </div>
+        </button>
+
         <!-- Upload Documents Card -->
         <button id="btn-upload-docs" class="group flex flex-col items-start p-7 bg-surface rounded-2xl border-2 border-border-soft hover:border-primary transition-all min-h-touch-target focus:outline-none focus:shadow-focus-ring shadow-card hover:shadow-none text-left">
           <div class="bg-upload-container p-4 rounded-2xl mb-6 border-2 border-upload-container">
@@ -249,6 +262,12 @@
     if (uploadBtn) {
       uploadBtn.addEventListener('click', () => {
         location.href = window.AF.url('uploadDocs');
+      });
+    }
+    const voiceFillBtn = document.getElementById('btn-voice-fill');
+    if (voiceFillBtn) {
+      voiceFillBtn.addEventListener('click', () => {
+        location.href = window.AF.url('voiceFill');
       });
     }
   })();
