@@ -381,28 +381,6 @@ body.no-anim .af-chat-panel:not([hidden]) {
   align-items: center;
   gap: 8px;
 }
-.af-chat-lang-select {
-  background: rgba(255, 255, 255, 0.15);
-  color: #FFFFFF;
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  outline: none;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
-}
-.af-chat-lang-select:hover {
-  background: rgba(255, 255, 255, 0.25);
-}
-.af-chat-lang-select:focus {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
-}
-.af-chat-lang-select option {
-  background: #1A4D6B;
-  color: #FFFFFF;
-}
 .af-chat-close {
   display: flex;
   align-items: center;

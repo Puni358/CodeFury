@@ -212,7 +212,13 @@
               <p class="font-label-lg text-label-lg text-consent uppercase tracking-wider">Please confirm before saving</p>
             </div>
 
-            <p class="font-body-lg text-body-lg text-on-surface-variant mb-4">We heard:</p>
+            <div class="flex items-center gap-3 mb-4">
+              <p class="font-body-lg text-body-lg text-on-surface-variant">We heard:</p>
+              <button type="button" id="btn-read-confirm" class="min-h-touch-target rounded-xl border-2 border-consent bg-consent-container px-4 py-1.5 font-label-md text-label-md text-on-consent-container hover:bg-consent-container/80 focus:outline-none focus:shadow-focus-ring flex items-center gap-2" title="Read confirmation aloud">
+                <span class="material-symbols-outlined text-[22px]">volume_up</span>
+                <span id="read-confirm-label">Read aloud</span>
+              </button>
+            </div>
 
             <!-- Editable Review Box -->
             <div class="relative w-full bg-surface-low border-[3px] border-consent rounded-3xl p-6 shadow-consent-card mb-6 flex flex-col gap-3">
@@ -381,6 +387,7 @@
     const promptTitleEl = document.getElementById('prompt-title');
     const currentValTextEl = document.getElementById('current-val-text');
     const readPromptBtn = document.getElementById('btn-read-prompt');
+    const readConfirmBtn = document.getElementById('btn-read-confirm');
     const startMicBtn = document.getElementById('btn-start-mic');
     const stopMicBtn = document.getElementById('btn-stop-mic');
     const livePreviewEl = document.getElementById('live-speech-preview');
@@ -388,6 +395,50 @@
     const tryAgainBtn = document.getElementById('btn-try-again');
     const confirmSaveBtn = document.getElementById('btn-confirm-save');
     const savedLabelEl = document.getElementById('saved-label');
+
+    // Single shared TTS state per page instance (consistent with field-explain.js and chat-widget.js)
+    let ttsState = null;
+    function _ensureTtsState() {
+      if (!ttsState && window.AF && window.AF.makeTtsState) {
+        ttsState = window.AF.makeTtsState();
+        ttsState.onStateChange = function (isPlaying, activeBtn) {
+          updateVoiceTtsButtons(isPlaying, activeBtn);
+        };
+      }
+      return ttsState;
+    }
+
+    function updateVoiceTtsButtons(isPlaying, activeBtn) {
+      const isKn = activeLang === 'kn';
+
+      if (readPromptBtn) {
+        const icon = readPromptBtn.querySelector('.material-symbols-outlined');
+        const label = document.getElementById('read-prompt-label');
+        if (isPlaying && activeBtn === readPromptBtn) {
+          if (icon) icon.textContent = 'stop';
+          if (label) label.textContent = isKn ? 'ನಿಲ್ಲಿಸಿ' : 'Stop';
+          readPromptBtn.setAttribute('aria-label', isKn ? 'ಓದುವುದನ್ನು ನಿಲ್ಲಿಸಿ' : 'Stop reading');
+        } else {
+          if (icon) icon.textContent = 'volume_up';
+          if (label) label.textContent = isKn ? 'ಪ್ರಶ್ನೆ ಓದಿ' : 'Read question';
+          readPromptBtn.setAttribute('aria-label', isKn ? 'ಪ್ರಶ್ನೆ ಓದಿ' : 'Read question');
+        }
+      }
+
+      if (readConfirmBtn) {
+        const icon = readConfirmBtn.querySelector('.material-symbols-outlined');
+        const label = document.getElementById('read-confirm-label');
+        if (isPlaying && activeBtn === readConfirmBtn) {
+          if (icon) icon.textContent = 'stop';
+          if (label) label.textContent = isKn ? 'ನಿಲ್ಲಿಸಿ' : 'Stop';
+          readConfirmBtn.setAttribute('aria-label', isKn ? 'ಓದುವುದನ್ನು ನಿಲ್ಲಿಸಿ' : 'Stop reading');
+        } else {
+          if (icon) icon.textContent = 'volume_up';
+          if (label) label.textContent = isKn ? 'ಓದಿ' : 'Read aloud';
+          readConfirmBtn.setAttribute('aria-label', isKn ? 'ಗಟ್ಟಿಯಾಗಿ ಓದಿ' : 'Read confirmation aloud');
+        }
+      }
+    }
 
     // Populate Selector
     function populateSelector() {
@@ -447,6 +498,9 @@
     }
 
     function renderCurrentField() {
+      if (window.AF && typeof window.AF.stopTtsState === 'function') {
+        window.AF.stopTtsState(_ensureTtsState());
+      }
       const field = FIELDS[currentFieldIndex];
       const total = FIELDS.length;
       progressText.textContent = `Field ${currentFieldIndex + 1} of ${total}`;
@@ -467,15 +521,32 @@
 
     renderCurrentField();
 
-    // TTS Read Question
+    // TTS Read Question Button Handler (Toggle Play / Stop)
     readPromptBtn.addEventListener('click', () => {
       const field = FIELDS[currentFieldIndex];
       const textToSpeak = field.prompt[activeLang] || field.prompt.en;
+      _ensureTtsState();
       window.AF.speakText(textToSpeak, activeLang, {
+        audioState: ttsState,
         btn: readPromptBtn,
         noteEl: document.getElementById('tts-note-box')
       });
     });
+
+    // TTS Read Confirmation Button Handler (Toggle Play / Stop)
+    if (readConfirmBtn) {
+      readConfirmBtn.addEventListener('click', () => {
+        const currentText = reviewInputEl.value.trim();
+        const speakConfirm = activeLang === 'kn'
+          ? `ನೀವು ${currentText} ಎಂದಿದ್ದೀರಾ? ದೃಢೀಕರಿಸಿ.`
+          : `You said ${currentText}. Please confirm to save.`;
+        _ensureTtsState();
+        window.AF.speakText(speakConfirm, activeLang, {
+          audioState: ttsState,
+          btn: readConfirmBtn
+        });
+      });
+    }
 
     // Helper: format spoken response
     function formatSpokenValue(str, type) {
@@ -612,7 +683,7 @@
       // Step 1: Stop any currently playing TTS so mic isn't drowned out
       try {
         if (window.AF && typeof window.AF.stopTtsState === 'function') {
-          window.AF.stopTtsState();
+          window.AF.stopTtsState(_ensureTtsState());
           console.log('[AccessFill Voice] startListening() → TTS stopped ✅');
         }
       } catch (ttsErr) {
@@ -781,7 +852,11 @@
         const speakConfirm = activeLang === 'kn'
           ? `ನೀವು ${formatted || rawText} ಎಂದಿದ್ದೀರಾ? ದೃಢೀಕರಿಸಿ.`
           : `You said ${formatted || rawText}. Please confirm to save.`;
-        window.AF.speakText(speakConfirm, activeLang, { btn: confirmSaveBtn });
+        _ensureTtsState();
+        window.AF.speakText(speakConfirm, activeLang, {
+          audioState: ttsState,
+          btn: readConfirmBtn
+        });
       }, 900);
     }
 

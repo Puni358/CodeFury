@@ -38,7 +38,7 @@
   }
 
   function lang() {
-    return (window.AF && window.AF.readPrefs && window.AF.readPrefs().language) === 'kn' ? 'kn' : 'en';
+    return 'en';
   }
 
   function animsOn() {
@@ -123,7 +123,7 @@
   }
 
   /* ── Build the widget DOM ────────────────────────────────────── */
-  var toggleBtn, panel, msgList, inputEl, sendBtn, charCount, langSelect;
+  var toggleBtn, panel, msgList, inputEl, sendBtn, charCount;
 
   function buildWidget() {
     /* ── Toggle button (FAB) ────────────────────────────────── */
@@ -159,25 +159,6 @@
 
     var headerRight = el('div', { className: 'af-chat-header-right' });
 
-    /* Header Language selector */
-    langSelect = el('select', {
-      id: 'af-chat-lang-select',
-      className: 'af-chat-lang-select',
-      'aria-label': 'Chat Language',
-    });
-    var optEn = el('option', { value: 'en' }, ['EN']);
-    var optKn = el('option', { value: 'kn' }, ['ಕನ್ನಡ']);
-    langSelect.appendChild(optEn);
-    langSelect.appendChild(optKn);
-    langSelect.value = lang();
-
-    langSelect.addEventListener('change', function () {
-      var newLang = langSelect.value === 'kn' ? 'kn' : 'en';
-      if (window.AF && window.AF.savePrefs) {
-        window.AF.savePrefs({ language: newLang });
-      }
-    });
-
     var closeBtn = el('button', {
       id: 'af-chat-close',
       className: 'af-chat-close',
@@ -187,7 +168,6 @@
     closeBtn.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true" style="font-size:22px;">close</span>';
     closeBtn.addEventListener('click', function () { setOpen(false); });
 
-    headerRight.appendChild(langSelect);
     headerRight.appendChild(closeBtn);
 
     header.appendChild(headerLeft);
@@ -284,7 +264,6 @@
   function setOpen(open) {
     isOpen = open;
     if (open) {
-      if (langSelect) langSelect.value = lang();
       panel.removeAttribute('hidden');
       toggleBtn.setAttribute('aria-expanded', 'true');
       toggleBtn.setAttribute('aria-label', 'Close AccessFill Assistant');
