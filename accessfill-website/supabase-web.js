@@ -84,12 +84,14 @@
 
   function isJwtAuthError(status, data) {
     if (status !== 401 && status !== 403) return false;
+    if (status === 401) return true;
     const code = String((data && (data.code || data.error_code || data.error)) || '');
     const blob = JSON.stringify(data || {}).toLowerCase();
     return code === 'UNAUTHORIZED_ASYMMETRIC_JWT'
       || blob.indexOf('unauthorized_asymmetric_jwt') >= 0
       || blob.indexOf('invalid jwt') >= 0
       || blob.indexOf('invalid_jwt') >= 0
+      || blob.indexOf('jwt') >= 0
       || code === 'PGRST301';
   }
 
@@ -644,7 +646,7 @@
 
       const now = Math.floor(Date.now() / 1000);
       const exp = Number(this.session.expires_at) || jwtExpiryUnix(this.session.access_token);
-      const nearExpiry = !exp || (exp - now) < 60;
+      const nearExpiry = !exp || (exp - now) < 120;
 
       if (forceRefresh || nearExpiry) {
         const ok = await this.refreshSession();

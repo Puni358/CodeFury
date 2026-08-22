@@ -37,38 +37,20 @@
             "on-consent": "#FFFFFF",
             "consent-container": "#D4E7DB",
             "on-consent-container": "#183B2A",
-            "consent-glow": "rgba(45,106,79,0.12)",
 
             "info-container": "#E6E0D3",
-            "on-info-container": "#3B3325",
-            "draft-container": "#DBE3EC",
-            "on-draft-container": "#1F3347",
-            "upload-container": "#EDE0D5",
-            "on-upload-container": "#4A2E19"
+            "on-info-container": "#3B3325"
           },
           "borderRadius": {
-            "DEFAULT": "8px",
-            "lg": "12px",
-            "xl": "16px",
-            "2xl": "20px",
-            "3xl": "28px",
-            "full": "9999px"
+            "DEFAULT": "8px", "lg": "12px", "xl": "16px", "2xl": "20px", "3xl": "28px", "full": "9999px"
           },
           "spacing": {
-            "gutter": "28px",
-            "touch-target": "56px",
-            "margin-desktop": "72px",
-            "max-width": "1200px",
-            "stack-gap": "16px"
+            "gutter": "28px", "touch-target": "56px", "margin-desktop": "72px", "max-width": "1200px", "stack-gap": "16px"
           },
           "fontFamily": {
-            "body-lg": ["Atkinson Hyperlegible Next"],
-            "headline-md": ["Atkinson Hyperlegible Next"],
-            "body-md": ["Atkinson Hyperlegible Next"],
-            "headline-lg": ["Atkinson Hyperlegible Next"],
-            "label-md": ["Atkinson Hyperlegible Next"],
-            "headline-lg-mobile": ["Atkinson Hyperlegible Next"],
-            "label-lg": ["Atkinson Hyperlegible Next"],
+            "body-lg": ["Atkinson Hyperlegible Next"], "headline-md": ["Atkinson Hyperlegible Next"],
+            "body-md": ["Atkinson Hyperlegible Next"], "headline-lg": ["Atkinson Hyperlegible Next"],
+            "label-md": ["Atkinson Hyperlegible Next"], "label-lg": ["Atkinson Hyperlegible Next"],
             "headline-xl": ["Atkinson Hyperlegible Next"]
           },
           "fontSize": {
@@ -77,9 +59,8 @@
             "body-md": ["20px", {"lineHeight": "32px", "fontWeight": "500"}],
             "headline-lg": ["44px", {"lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
             "label-md": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600"}],
-            "headline-lg-mobile": ["36px", {"lineHeight": "44px", "fontWeight": "700"}],
             "label-lg": ["20px", {"lineHeight": "30px", "letterSpacing": "0.01em", "fontWeight": "700"}],
-            "headline-xl": ["52px", {"lineHeight": "64px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
+            "headline-xl": ["44px", {"lineHeight": "54px", "letterSpacing": "-0.01em", "fontWeight": "700"}]
           },
           "boxShadow": {
             "card": "0 1px 2px rgba(31,41,55,0.04), 0 0 0 2px #E5E1D8",
@@ -102,119 +83,170 @@
 
 <main class="w-full pt-20 pb-margin-desktop flex-1">
   <div class="max-w-max-width mx-auto px-gutter">
+
+    <!-- Top Banner Controls -->
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pt-4">
+      <div>
+        <h1 class="font-headline-lg text-headline-lg text-on-surface">Voice Fill</h1>
+        <p class="font-body-md text-body-md text-on-surface-variant">Speak your details one field at a time. Saves directly to your profile.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <!-- Field Selector Dropdown -->
+        <label for="field-selector" class="sr-only">Select field</label>
+        <select id="field-selector" class="min-h-touch-target rounded-xl border-2 border-outline-variant bg-surface px-4 py-2 font-label-md text-label-md text-on-surface focus:border-primary focus:outline-none focus:shadow-focus-ring">
+          <!-- Populated dynamically -->
+        </select>
+        <!-- Language selector -->
+        <button type="button" id="btn-lang-toggle" class="min-h-touch-target rounded-xl border-2 border-outline-variant bg-surface px-4 py-2 font-label-md text-label-md text-primary hover:bg-surface-container-high focus:outline-none focus:shadow-focus-ring flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px]">translate</span>
+          <span id="lang-toggle-label">ಕನ್ನಡ</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Demo Mode Banner -->
+    <div id="demo-voice-note" class="hidden mb-6 rounded-2xl border-2 border-on-info-container/20 bg-info-container p-4 flex items-center gap-3" role="status">
+      <span class="material-symbols-outlined text-on-info-container text-[24px]">science</span>
+      <p class="font-label-md text-label-md text-on-info-container">Demo mode — voice fills will update your browser's mock profile.</p>
+    </div>
+
+    <!-- Main Voice Card Container -->
     <div class="flex flex-col w-full h-[640px] items-center justify-center relative">
+      <div class="w-full max-w-2xl bg-surface shadow-modal rounded-3xl relative z-10 flex flex-col p-8 md:p-10 min-h-[500px] border-2 border-border-soft">
 
-      <div class="w-full max-w-2xl bg-surface shadow-modal rounded-3xl relative z-10 flex flex-col p-10 min-h-[460px] border-2 border-border-soft">
-
-        <!-- Header / Progress -->
-        <div class="flex flex-col items-center mb-10 w-full" id="progress-header">
-          <div class="flex items-center gap-3 mb-4">
-            <span class="w-8 h-8 rounded-lg bg-primary-container border-2 border-primary-container flex items-center justify-center">
-              <span class="material-symbols-outlined text-on-primary-container text-[18px]" style="font-variation-settings: 'FILL' 1;">list_alt</span>
-            </span>
-            <p class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wide" id="progress-text">Field 1 of 6</p>
+        <!-- Progress Header -->
+        <div class="flex flex-col items-center mb-8 w-full" id="progress-header">
+          <div class="flex items-center justify-between w-full mb-3">
+            <div class="flex items-center gap-3">
+              <button type="button" id="btn-prev-field" class="w-10 h-10 rounded-xl border-2 border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-high focus:outline-none focus:shadow-focus-ring" title="Previous field" aria-label="Previous field">
+                <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+              </button>
+              <span class="w-8 h-8 rounded-lg bg-primary-container border-2 border-primary-container flex items-center justify-center">
+                <span class="material-symbols-outlined text-on-primary-container text-[18px]" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+              </span>
+              <p class="font-label-lg text-label-lg text-on-surface-variant uppercase tracking-wide" id="progress-text">Field 1 of 12</p>
+            </div>
+            <button type="button" id="btn-next-field" class="w-10 h-10 rounded-xl border-2 border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-container-high focus:outline-none focus:shadow-focus-ring" title="Next field" aria-label="Next field">
+              <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+            </button>
           </div>
           <div class="w-full h-3 bg-border-soft rounded-full overflow-hidden">
-            <div class="h-full bg-primary rounded-full transition-all duration-500 ease-out" id="progress-bar" style="width: 16%;"></div>
+            <div class="h-full bg-primary rounded-full transition-all duration-500 ease-out" id="progress-bar" style="width: 8.3%;"></div>
           </div>
         </div>
 
         <!-- State Container -->
         <div class="flex-1 flex flex-col items-center justify-center w-full relative" id="state-container">
 
-          <!-- STATE A: Prompt (calm, inviting) -->
+          <!-- STATE A: PROMPT -->
           <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-100 z-10" id="state-a">
-            <div class="w-16 h-16 rounded-2xl bg-primary-container flex items-center justify-center border-2 border-primary-container mb-8">
+            <div class="w-16 h-16 rounded-2xl bg-primary-container flex items-center justify-center border-2 border-primary-container mb-4">
               <span class="material-symbols-outlined text-on-primary-container text-[36px]" style="font-variation-settings: 'FILL' 1;">help_center</span>
             </div>
-            <h2 class="font-headline-lg text-headline-lg text-on-surface text-center mb-10" id="prompt-title">What is your name?</h2>
-            <button class="w-28 h-28 rounded-3xl bg-primary flex items-center justify-center text-on-primary hover:bg-surface-tint focus:shadow-focus-ring transition-colors shadow-card group focus:outline-none" onclick="transitionTo('state-b')" aria-label="Tap to speak">
-              <span class="material-symbols-outlined text-[52px] group-hover:scale-105 transition-transform">mic</span>
-            </button>
-            <p class="mt-6 font-body-md text-body-md text-on-surface-variant">Tap to speak</p>
-          </div>
 
-          <!-- STATE B: Listening -->
-          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-0 pointer-events-none z-0" id="state-b">
-            <div class="flex items-center gap-3 mb-8">
-              <span class="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
-              <p class="font-label-lg text-label-lg text-primary uppercase tracking-wide">Listening</p>
+            <!-- Field Label & Current Stored Value -->
+            <span class="px-4 py-1 rounded-full bg-surface-container-high border border-outline-variant text-[14px] font-label-md text-on-surface-variant mb-2" id="field-name-badge">Full Name</span>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface text-center mb-3" id="prompt-title">What is your full name?</h2>
+
+            <div class="text-center mb-6" id="current-val-wrap">
+              <span class="text-[14px] font-label-md text-on-surface-variant">Currently saved: </span>
+              <span class="font-body-md font-bold text-primary" id="current-val-text">None</span>
             </div>
-            <div class="relative w-40 h-40 flex items-center justify-center mb-6">
-              <span class="absolute inset-0 rounded-full bg-primary/35 mic-pulse-ring"></span>
-              <span class="absolute inset-2 rounded-full bg-primary/20 mic-pulse-ring-2"></span>
-              <button class="relative z-10 w-28 h-28 rounded-3xl bg-primary flex items-center justify-center text-on-primary shadow-card focus:outline-none" onclick="transitionTo('state-c')" aria-label="Listening — tap when done">
-                <span class="material-symbols-outlined text-[48px] mic-bounce" style="font-variation-settings: 'FILL' 1;">graphic_eq</span>
+
+            <div class="flex items-center gap-4 mb-4">
+              <!-- Listen prompt TTS button -->
+              <button type="button" id="btn-read-prompt" class="min-h-touch-target rounded-xl border-2 border-primary bg-primary-container px-5 py-2 font-label-md text-label-md text-on-primary-container hover:bg-primary-container/80 focus:outline-none focus:shadow-focus-ring flex items-center gap-2">
+                <span class="material-symbols-outlined text-[24px]">volume_up</span>
+                <span id="read-prompt-label">Read question</span>
               </button>
             </div>
-            <div class="bar-wave flex gap-2 h-10 items-end mt-2">
-              <div class="w-2 bg-primary rounded-full" style="height: 40%;"></div>
-              <div class="w-2 bg-primary rounded-full" style="height: 70%;"></div>
-              <div class="w-2 bg-primary rounded-full" style="height: 90%;"></div>
-              <div class="w-2 bg-primary rounded-full" style="height: 60%;"></div>
-              <div class="w-2 bg-primary rounded-full" style="height: 40%;"></div>
-            </div>
-            <p class="mt-6 font-body-md text-body-md text-on-surface-variant">Speak clearly. Tap again when done.</p>
+
+            <!-- Mic Trigger Button -->
+            <button type="button" class="w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-on-primary hover:bg-surface-tint focus:shadow-focus-ring transition-colors shadow-card group focus:outline-none" id="btn-start-mic" aria-label="Tap to speak">
+              <span class="material-symbols-outlined text-[48px] group-hover:scale-105 transition-transform">mic</span>
+            </button>
+            <p class="mt-4 font-body-md text-body-md text-on-surface-variant">Tap to speak</p>
+
+            <p id="tts-note-box" class="hidden mt-3 text-[14px] text-on-surface-variant text-center"></p>
           </div>
 
-          <!-- STATE C: Transcribing -->
-          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-0 pointer-events-none z-0" id="state-c">
-            <div class="w-18 h-18 rounded-2xl bg-primary-container border-2 border-primary-container flex items-center justify-center mb-8 p-5">
-              <svg class="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75 animate-spin" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
-              </svg>
-            </div>
-            <h2 class="font-headline-md text-headline-md text-on-surface text-center">Got it, one moment…</h2>
-          </div>
-
-          <!-- STATE D: CONSENT / CONFIRMATION -->
-          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-400 opacity-0 pointer-events-none z-0" id="state-d">
+          <!-- STATE B: LISTENING -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-0 pointer-events-none z-0" id="state-b">
             <div class="flex items-center gap-3 mb-6">
+              <span class="w-3 h-3 rounded-full bg-primary animate-pulse"></span>
+              <p class="font-label-lg text-label-lg text-primary uppercase tracking-wide">Listening...</p>
+            </div>
+
+            <div class="relative w-36 h-36 flex items-center justify-center mb-6">
+              <span class="absolute inset-0 rounded-full bg-primary/35 animate-ping"></span>
+              <button type="button" class="relative z-10 w-24 h-24 rounded-3xl bg-primary flex items-center justify-center text-on-primary shadow-card focus:outline-none" id="btn-stop-mic" aria-label="Listening — tap when done">
+                <span class="material-symbols-outlined text-[44px]" style="font-variation-settings: 'FILL' 1;">graphic_eq</span>
+              </button>
+            </div>
+
+            <div class="flex gap-2 h-10 items-end mt-2 mb-4">
+              <div class="w-2 bg-primary rounded-full animate-bounce" style="height: 60%; animation-delay: 0.1s;"></div>
+              <div class="w-2 bg-primary rounded-full animate-bounce" style="height: 90%; animation-delay: 0.2s;"></div>
+              <div class="w-2 bg-primary rounded-full animate-bounce" style="height: 40%; animation-delay: 0.3s;"></div>
+              <div class="w-2 bg-primary rounded-full animate-bounce" style="height: 80%; animation-delay: 0.4s;"></div>
+              <div class="w-2 bg-primary rounded-full animate-bounce" style="height: 50%; animation-delay: 0.5s;"></div>
+            </div>
+
+            <p class="font-body-md text-body-md text-on-surface-variant" id="live-speech-preview">Speak clearly. Tap mic button when done.</p>
+          </div>
+
+          <!-- STATE C: TRANSCRIBING -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-300 opacity-0 pointer-events-none z-0" id="state-c">
+            <div class="w-18 h-18 rounded-2xl bg-primary-container border-2 border-primary-container flex items-center justify-center mb-6 p-4">
+              <span class="material-symbols-outlined text-primary text-[36px] animate-spin">progress_activity</span>
+            </div>
+            <h2 class="font-headline-md text-headline-md text-on-surface text-center">Processing voice response…</h2>
+          </div>
+
+          <!-- STATE D: REVIEW / CONSENT -->
+          <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-400 opacity-0 pointer-events-none z-0" id="state-d">
+            <div class="flex items-center gap-3 mb-4">
               <span class="w-10 h-10 rounded-xl bg-consent border-2 border-consent flex items-center justify-center shadow-card">
                 <span class="material-symbols-outlined text-on-consent text-[22px]" style="font-variation-settings: 'FILL' 1;">verified_user</span>
               </span>
-              <p class="font-label-lg text-label-lg text-consent uppercase tracking-wider">Please confirm before we continue</p>
+              <p class="font-label-lg text-label-lg text-consent uppercase tracking-wider">Please confirm before saving</p>
             </div>
 
-            <p class="font-body-lg text-body-lg text-on-surface-variant mb-5">Did you say:</p>
+            <p class="font-body-lg text-body-lg text-on-surface-variant mb-4">We heard:</p>
 
-            <div class="relative w-full bg-surface-low border-[3px] border-consent rounded-3xl pt-14 pb-12 px-10 shadow-consent-card mb-10">
-              <button class="absolute -top-5 -right-5 w-14 h-14 rounded-2xl bg-consent hover:bg-consent/90 focus:shadow-consent-ring text-on-consent flex items-center justify-center shadow-card transition-colors focus:outline-none" aria-label="Edit what I said" title="Edit" onclick="transitionTo('state-a')">
-                <span class="material-symbols-outlined text-[28px]" style="font-variation-settings: 'FILL' 0;">edit</span>
-              </button>
-
-              <div class="absolute -top-6 left-8 w-12 h-12 rounded-2xl bg-consent-container border-2 border-consent-container flex items-center justify-center text-on-consent-container font-headline-xl select-none" aria-hidden="true">
-                <span style="font-size:38px; line-height:1; transform: translateY(-4px);">" </span>
-              </div>
-
-              <h2 class="font-headline-xl text-headline-xl text-on-surface text-center pt-2" id="confirmed-value">Punith</h2>
+            <!-- Editable Review Box -->
+            <div class="relative w-full bg-surface-low border-[3px] border-consent rounded-3xl p-6 shadow-consent-card mb-6 flex flex-col gap-3">
+              <label for="review-input-val" class="sr-only">Edit answer</label>
+              <input id="review-input-val" type="text"
+                     class="w-full font-headline-xl text-headline-xl text-on-surface text-center bg-transparent border-b-2 border-outline-variant focus:border-primary focus:outline-none px-2 py-1"/>
+              <p class="text-[14px] text-on-surface-variant text-center">You can edit the text directly above if needed.</p>
             </div>
 
             <div class="flex flex-col sm:flex-row gap-4 w-full">
-              <button class="flex-1 min-h-touch-target rounded-2xl border-2 border-outline-variant bg-surface-low text-on-surface hover:bg-surface-container-high focus:shadow-focus-ring transition-colors font-label-lg text-label-lg flex items-center justify-center gap-3 focus:outline-none" onclick="transitionTo('state-a')">
-                <span class="material-symbols-outlined text-[26px]">refresh</span>
+              <button type="button" id="btn-try-again" class="flex-1 min-h-touch-target rounded-2xl border-2 border-outline-variant bg-surface-low text-on-surface hover:bg-surface-container-high focus:shadow-focus-ring transition-colors font-label-lg text-label-lg flex items-center justify-center gap-3 focus:outline-none">
+                <span class="material-symbols-outlined text-[24px]">refresh</span>
                 Try again
               </button>
-              <button class="flex-1 min-h-touch-target rounded-2xl bg-consent hover:bg-consent/90 focus:shadow-consent-ring text-on-consent transition-colors font-label-lg text-label-lg flex items-center justify-center gap-3 shadow-card focus:outline-none" onclick="transitionTo('state-e')">
-                <span class="material-symbols-outlined text-[26px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-                Yes, that's right
+              <button type="button" id="btn-confirm-save" class="flex-1 min-h-touch-target rounded-2xl bg-consent hover:bg-consent/90 focus:shadow-consent-ring text-on-consent transition-colors font-label-lg text-label-lg flex items-center justify-center gap-3 shadow-card focus:outline-none">
+                <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                Yes, save this
               </button>
             </div>
           </div>
 
-          <!-- STATE E: Saved / Next -->
+          <!-- STATE E: SAVED -->
           <div class="w-full flex flex-col items-center absolute inset-0 justify-center transition-opacity duration-400 opacity-0 pointer-events-none z-0" id="state-e">
-            <div class="w-24 h-24 rounded-3xl bg-consent-container border-[3px] border-consent-container flex items-center justify-center mb-8">
-              <span class="material-symbols-outlined text-[56px] text-consent" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+            <div class="w-20 h-20 rounded-3xl bg-consent-container border-[3px] border-consent-container flex items-center justify-center mb-6">
+              <span class="material-symbols-outlined text-[48px] text-consent" style="font-variation-settings: 'FILL' 1;">task_alt</span>
             </div>
-            <h2 class="font-headline-md text-headline-md text-on-surface text-center mb-2" id="saved-label">Saved: Punith</h2>
+            <h2 class="font-headline-md text-headline-md text-on-surface text-center mb-2" id="saved-label">Saved!</h2>
             <p class="font-body-md text-body-md text-on-surface-variant">Moving to next field…</p>
           </div>
 
         </div>
       </div>
     </div>
+
   </div>
 </main>
 
@@ -222,71 +254,378 @@
 
 <script src="supabase-web.js"></script>
 <script src="shared.js"></script>
+<script src="field-explain.js"></script>
+<script src="chat-widget.js"></script>
 <script>
-  (async function pageInit() {
+  (async function initVoiceFillPage() {
     if (await window.AF.guardAuth('voiceFlow')) return;
     window.AF.renderHeader('voiceFlow');
     window.AF.renderFooter();
 
-    const client = window.AccessFillSupabase;
-    const name = (client && client.getDisplayName && client.getDisplayName()) || 'Punith';
-    const confirmedEl = document.getElementById('confirmed-value');
+    const sb = window.AccessFillSupabase;
+    if (sb && sb.isDemoMode) {
+      document.getElementById('demo-voice-note').classList.remove('hidden');
+    }
+
+    const FIELDS = [
+      {
+        key: 'full_name',
+        label: { en: 'Full Name', kn: 'ಪೂರ್ಣ ಹೆಸರು' },
+        prompt: { en: 'What is your full name as shown on official ID?', kn: 'ಅಧಿಕೃತ ಗುರುತಿನ ಚೀಟಿಯಲ್ಲಿರುವಂತೆ ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು ಏನು?' },
+        sample: 'Aarav Sharma',
+        type: 'text'
+      },
+      {
+        key: 'phone',
+        label: { en: 'Phone Number', kn: 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ' },
+        prompt: { en: 'What is your 10-digit mobile phone number?', kn: 'ನಿಮ್ಮ 10 ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಯಾವುದು?' },
+        sample: '9876543210',
+        type: 'phone'
+      },
+      {
+        key: 'date_of_birth',
+        label: { en: 'Date of Birth', kn: 'ಜನ್ಮ ದಿನಾಂಕ' },
+        prompt: { en: 'What is your date of birth?', kn: 'ನಿಮ್ಮ ಜನ್ಮ ದಿನಾಂಕ ಯಾವುದು?' },
+        sample: '1992-05-15',
+        type: 'date'
+      },
+      {
+        key: 'preferred_language',
+        label: { en: 'Preferred Language', kn: 'ಆದ್ಯತೆಯ ಭಾಷೆ' },
+        prompt: { en: 'What is your preferred language? Say English or Kannada.', kn: 'ನಿಮ್ಮ ಆದ್ಯತೆಯ ಭಾಷೆ ಯಾವುದು? ಇಂಗ್ಲಿಷ್ ಅಥವಾ ಕನ್ನಡ ಎಂದು ಹೇಳಿ.' },
+        sample: 'en',
+        type: 'language'
+      },
+      {
+        key: 'address_line1',
+        label: { en: 'Address Line 1', kn: 'ವಿಳಾಸ ಸಾಲು 1' },
+        prompt: { en: 'What is your house number and street address?', kn: 'ನಿಮ್ಮ ಮನೆ ಸಂಖ್ಯೆ ಮತ್ತು ರಸ್ತೆಯ ವಿಳಾಸ ಏನು?' },
+        sample: 'Flat 302, Green Avenue',
+        type: 'text'
+      },
+      {
+        key: 'city',
+        label: { en: 'City', kn: 'ನಗರ' },
+        prompt: { en: 'Which city do you live in?', kn: 'ನೀವು ಯಾವ ನಗರದಲ್ಲಿ ವಾಸಿಸುತ್ತೀರಿ?' },
+        sample: 'Bengaluru',
+        type: 'text'
+      },
+      {
+        key: 'state',
+        label: { en: 'State', kn: 'ರಾಜ್ಯ' },
+        prompt: { en: 'Which state do you live in?', kn: 'ನೀವು ಯಾವ ರಾಜ್ಯದಲ್ಲಿ ವಾಸಿಸುತ್ತೀರಿ?' },
+        sample: 'Karnataka',
+        type: 'text'
+      },
+      {
+        key: 'zip',
+        label: { en: 'PIN / Zip Code', kn: 'ಪಿನ್ ಕೋಡ್' },
+        prompt: { en: 'What is your 6-digit PIN code?', kn: 'ನಿಮ್ಮ 6 ಅಂಕಿಯ ಪಿನ್ ಕೋಡ್ ಏನು?' },
+        sample: '560001',
+        type: 'digits'
+      },
+      {
+        key: 'emergency_contact_name',
+        label: { en: 'Emergency Contact Name', kn: 'ತುರ್ತು ಸಂಪರ್ಕ ವ್ಯಕ್ತಿಯ ಹೆಸರು' },
+        prompt: { en: 'What is the full name of your emergency contact person?', kn: 'ನಿಮ್ಮ ತುರ್ತು ಸಂಪರ್ಕ ವ್ಯಕ್ತಿಯ ಪೂರ್ಣ ಹೆಸರು ಏನು?' },
+        sample: 'Priya Sharma',
+        type: 'text'
+      },
+      {
+        key: 'emergency_contact_phone',
+        label: { en: 'Emergency Contact Phone', kn: 'ತುರ್ತು ಸಂಪರ್ಕ ಫೋನ್' },
+        prompt: { en: 'What is your emergency contact phone number?', kn: 'ನಿಮ್ಮ ತುರ್ತು ಸಂಪರ್ಕಿತರ ಫೋನ್ ಸಂಖ್ಯೆ ಯಾವುದು?' },
+        sample: '9812345678',
+        type: 'phone'
+      },
+      {
+        key: 'aadhaar_number',
+        label: { en: 'Aadhaar Number', kn: 'ಆಧಾರ್ ಸಂಖ್ಯೆ' },
+        prompt: { en: 'What is your 12-digit Aadhaar ID number?', kn: 'ನಿಮ್ಮ 12 ಅಂಕಿಯ ಆಧಾರ್ ಸಂಖ್ಯೆ ಯಾವುದು?' },
+        sample: '548291024738',
+        type: 'aadhaar'
+      },
+      {
+        key: 'pan_number',
+        label: { en: 'PAN Number', kn: 'ಪ್ಯಾನ್ ಸಂಖ್ಯೆ' },
+        prompt: { en: 'What is your 10-character PAN number?', kn: 'ನಿಮ್ಮ 10 ಅಕ್ಷರದ ಪ್ಯಾನ್ ಸಂಖ್ಯೆ ಯಾವುದು?' },
+        sample: 'ABCDE1234F',
+        type: 'pan'
+      }
+    ];
+
+    let currentFieldIndex = 0;
+    let currentProfile = {};
+    let activeLang = (window.AF && window.AF.readPrefs && window.AF.readPrefs().language) || 'en';
+    if (activeLang !== 'kn') activeLang = 'en';
+
+    let recognition = null;
+    let isListening = false;
+    let capturedTranscript = '';
+
+    // Load initial profile data
+    try {
+      currentProfile = await sb.fetchFullUserProfileRLS() || {};
+    } catch (_) {}
+
+    // UI elements
+    const selectorEl = document.getElementById('field-selector');
+    const langBtn = document.getElementById('btn-lang-toggle');
+    const langLabel = document.getElementById('lang-toggle-label');
+    const progressText = document.getElementById('progress-text');
+    const progressBar = document.getElementById('progress-bar');
+    const prevBtn = document.getElementById('btn-prev-field');
+    const nextBtn = document.getElementById('btn-next-field');
+
+    const badgeEl = document.getElementById('field-name-badge');
+    const promptTitleEl = document.getElementById('prompt-title');
+    const currentValTextEl = document.getElementById('current-val-text');
+    const readPromptBtn = document.getElementById('btn-read-prompt');
+    const startMicBtn = document.getElementById('btn-start-mic');
+    const stopMicBtn = document.getElementById('btn-stop-mic');
+    const livePreviewEl = document.getElementById('live-speech-preview');
+    const reviewInputEl = document.getElementById('review-input-val');
+    const tryAgainBtn = document.getElementById('btn-try-again');
+    const confirmSaveBtn = document.getElementById('btn-confirm-save');
     const savedLabelEl = document.getElementById('saved-label');
-    if (confirmedEl) confirmedEl.textContent = name;
-    if (savedLabelEl) savedLabelEl.textContent = 'Saved: ' + name;
-  })();
 
-  const states = ['state-a', 'state-b', 'state-c', 'state-d', 'state-e'];
-  const prompts = [
-    { title: 'What is your name?', sample: 'Punith' },
-    { title: 'What is your email address?', sample: 'punith@accessfill.app' },
-    { title: 'What is your phone number?', sample: '+91 98765 43210' },
-    { title: 'What is your date of birth?', sample: 'January 15, 1990' },
-    { title: 'What is your current address?', sample: '123 Main Street, Bengaluru' },
-    { title: 'Please share your Aadhaar number.', sample: '1234 5678 9012' }
-  ];
-  let currentField = 0;
+    // Populate Selector
+    function populateSelector() {
+      selectorEl.innerHTML = '';
+      FIELDS.forEach((f, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = `${idx + 1}. ${f.label[activeLang] || f.label.en}`;
+        selectorEl.appendChild(opt);
+      });
+      selectorEl.value = currentFieldIndex;
+    }
+    populateSelector();
 
-  function transitionTo(targetStateId) {
-    states.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.classList.remove('opacity-100', 'z-10');
-        el.classList.add('opacity-0', 'pointer-events-none', 'z-0');
+    selectorEl.addEventListener('change', (e) => {
+      currentFieldIndex = parseInt(e.target.value, 10);
+      renderCurrentField();
+    });
+
+    langBtn.addEventListener('click', () => {
+      activeLang = activeLang === 'en' ? 'kn' : 'en';
+      langLabel.textContent = activeLang === 'en' ? 'ಕನ್ನಡ' : 'English';
+      window.AF.savePrefs({ language: activeLang });
+      populateSelector();
+      renderCurrentField();
+    });
+
+    prevBtn.addEventListener('click', () => {
+      if (currentFieldIndex > 0) {
+        currentFieldIndex--;
+        selectorEl.value = currentFieldIndex;
+        renderCurrentField();
       }
     });
 
-    const targetEl = document.getElementById(targetStateId);
-    if (targetEl) {
-      targetEl.classList.remove('opacity-0', 'pointer-events-none', 'z-0');
-      targetEl.classList.add('opacity-100', 'z-10');
+    nextBtn.addEventListener('click', () => {
+      if (currentFieldIndex < FIELDS.length - 1) {
+        currentFieldIndex++;
+        selectorEl.value = currentFieldIndex;
+        renderCurrentField();
+      }
+    });
+
+    function transitionToState(stateId) {
+      ['state-a', 'state-b', 'state-c', 'state-d', 'state-e'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.remove('opacity-100', 'z-10');
+          el.classList.add('opacity-0', 'pointer-events-none', 'z-0');
+        }
+      });
+      const target = document.getElementById(stateId);
+      if (target) {
+        target.classList.remove('opacity-0', 'pointer-events-none', 'z-0');
+        target.classList.add('opacity-100', 'z-10');
+      }
     }
 
-    if (targetStateId === 'state-c') {
-      setTimeout(() => transitionTo('state-d'), 1500);
-    } else if (targetStateId === 'state-e') {
+    function renderCurrentField() {
+      const field = FIELDS[currentFieldIndex];
+      const total = FIELDS.length;
+      progressText.textContent = `Field ${currentFieldIndex + 1} of ${total}`;
+      progressBar.style.width = `${Math.round(((currentFieldIndex + 1) / total) * 100)}%`;
+
+      badgeEl.textContent = field.label[activeLang] || field.label.en;
+      promptTitleEl.textContent = field.prompt[activeLang] || field.prompt.en;
+
+      const rawVal = currentProfile[field.key];
+      if (rawVal) {
+        currentValTextEl.textContent = sb.maskSensitiveData(field.key, rawVal);
+      } else {
+        currentValTextEl.textContent = activeLang === 'kn' ? 'ಖಾಲಿ' : 'Not set';
+      }
+
+      transitionToState('state-a');
+    }
+
+    renderCurrentField();
+
+    // TTS Read Question
+    readPromptBtn.addEventListener('click', () => {
+      const field = FIELDS[currentFieldIndex];
+      const textToSpeak = field.prompt[activeLang] || field.prompt.en;
+      window.AF.speakText(textToSpeak, activeLang, {
+        btn: readPromptBtn,
+        noteEl: document.getElementById('tts-note-box')
+      });
+    });
+
+    // Helper: format spoken response
+    function formatSpokenValue(str, type) {
+      if (!str) return '';
+      let val = String(str).trim();
+
+      const digitWordMap = {
+        'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+        'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+        'ಶೂನ್ಯ': '0', 'ಒಂದು': '1', 'ಎರಡು': '2', 'ಮೂರು': '3', 'ನಾಲ್ಕು': '4',
+        'ಐದು': '5', 'ಆರು': '6', 'ಏಳು': '7', 'ಎಂಟು': '8', 'ಒಂಬತ್ತು': '9'
+      };
+
+      if (type === 'phone' || type === 'digits' || type === 'aadhaar') {
+        let low = val.toLowerCase();
+        Object.keys(digitWordMap).forEach(w => {
+          low = low.replace(new RegExp(w, 'g'), digitWordMap[w]);
+        });
+        val = low.replace(/\D/g, '');
+        if (type === 'phone') val = val.slice(0, 10);
+        if (type === 'aadhaar') val = val.slice(0, 12);
+        if (type === 'digits') val = val.slice(0, 6);
+      } else if (type === 'pan') {
+        val = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+      } else if (type === 'language') {
+        const low = val.toLowerCase();
+        if (low.includes('kannada') || low.includes('ಕನ್ನಡ') || low.includes('kn')) val = 'kn';
+        else val = 'en';
+      }
+      return val;
+    }
+
+    // Speech Recognition setup
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    function startListening() {
+      capturedTranscript = '';
+      transitionToState('state-b');
+      livePreviewEl.textContent = activeLang === 'kn' ? 'ಸ್ಪಷ್ಟವಾಗಿ ಮಾತನಾಡಿ...' : 'Speak clearly. Tap mic button when done.';
+
+      if (!SpeechRec) {
+        livePreviewEl.textContent = activeLang === 'kn'
+          ? 'ನಿಮ್ಮ ಬ್ರೌಸರ್ ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆಯನ್ನು ಬೆಂಬಲಿಸುವುದಿಲ್ಲ — ದಯವಿಟ್ಟು ಟೈಪ್ ಮಾಡಿ'
+          : 'Voice recognition not supported in this browser. Showing manual input.';
+        setTimeout(() => {
+          capturedTranscript = prompt(FIELDS[currentFieldIndex].prompt[activeLang] || FIELDS[currentFieldIndex].prompt.en) || '';
+          processCapturedVoice(capturedTranscript);
+        }, 800);
+        return;
+      }
+
+      try {
+        if (recognition) { recognition.abort(); }
+        recognition = new SpeechRec();
+        recognition.lang = activeLang === 'kn' ? 'kn-IN' : 'en-US';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+
+        recognition.onresult = (e) => {
+          let interim = '';
+          for (let i = e.resultIndex; i < e.results.length; ++i) {
+            if (e.results[i].isFinal) {
+              capturedTranscript += e.results[i][0].transcript;
+            } else {
+              interim += e.results[i][0].transcript;
+            }
+          }
+          livePreviewEl.textContent = capturedTranscript || interim || 'Listening...';
+        };
+
+        recognition.onerror = (err) => {
+          console.warn('[AccessFill Voice] recognition error:', err);
+          stopListening();
+        };
+
+        recognition.onend = () => {
+          isListening = false;
+          processCapturedVoice(capturedTranscript);
+        };
+
+        isListening = true;
+        recognition.start();
+      } catch (err) {
+        console.error('[AccessFill Voice] start failed:', err);
+        processCapturedVoice('');
+      }
+    }
+
+    function stopListening() {
+      if (recognition && isListening) {
+        isListening = false;
+        try { recognition.stop(); } catch (_) {}
+      }
+    }
+
+    function processCapturedVoice(rawText) {
+      transitionToState('state-c');
       setTimeout(() => {
-        currentField = (currentField + 1) % prompts.length;
-        const next = prompts[currentField];
-        const fieldIndex = currentField + 1;
+        const field = FIELDS[currentFieldIndex];
+        const formatted = formatSpokenValue(rawText || field.sample, field.type);
+        reviewInputEl.value = formatted || rawText || field.sample;
 
-        const progressText = document.getElementById('progress-text');
-        const progressBar = document.getElementById('progress-bar');
-        const promptTitle = document.getElementById('prompt-title');
-        const confirmedValue = document.getElementById('confirmed-value');
-        const savedLabel = document.getElementById('saved-label');
+        transitionToState('state-d');
 
-        if (progressText) progressText.innerText = 'Field ' + fieldIndex + ' of ' + prompts.length;
-        if (progressBar) progressBar.style.width = String(Math.round((fieldIndex / prompts.length) * 100)) + '%';
-        if (promptTitle) promptTitle.innerText = next.title;
-        if (confirmedValue) confirmedValue.textContent = next.sample;
-        if (savedLabel) savedLabel.textContent = 'Saved: ' + next.sample;
-
-        transitionTo('state-a');
-      }, 2000);
+        // Optional confirmation read aloud
+        const speakConfirm = activeLang === 'kn'
+          ? `ನೀವು ${formatted || rawText} ಎಂದಿದ್ದೀರಾ? ದೃಢೀಕರಿಸಿ.`
+          : `You said ${formatted || rawText}. Please confirm to save.`;
+        window.AF.speakText(speakConfirm, activeLang, { btn: confirmSaveBtn });
+      }, 900);
     }
-  }
-</script>
 
+    startMicBtn.addEventListener('click', startListening);
+    stopMicBtn.addEventListener('click', () => {
+      stopListening();
+    });
+
+    tryAgainBtn.addEventListener('click', () => {
+      renderCurrentField();
+    });
+
+    confirmSaveBtn.addEventListener('click', async () => {
+      const field = FIELDS[currentFieldIndex];
+      const finalVal = reviewInputEl.value.trim();
+
+      confirmSaveBtn.disabled = true;
+      const patch = { [field.key]: finalVal };
+
+      const result = await sb.saveFullUserProfileRLS(patch);
+      confirmSaveBtn.disabled = false;
+
+      if (!result.success) {
+        alert('Save failed: ' + (result.error || 'Unknown error'));
+        return;
+      }
+
+      currentProfile[field.key] = finalVal;
+      savedLabelEl.textContent = (activeLang === 'kn' ? 'ಸೇವ್ ಮಾಡಲಾಗಿದೆ: ' : 'Saved: ') + (finalVal || 'Done');
+      transitionToState('state-e');
+
+      setTimeout(() => {
+        if (currentFieldIndex < FIELDS.length - 1) {
+          currentFieldIndex++;
+          selectorEl.value = currentFieldIndex;
+        }
+        renderCurrentField();
+      }, 1600);
+    });
+
+  })();
+</script>
 </body>
 </html>
