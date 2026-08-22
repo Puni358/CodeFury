@@ -549,6 +549,173 @@
       return { success: false, error: "Failed to persist profile to database." };
     }
 
+    // ─── Google OAuth (PKCE flow) ─────────────────────────────────────────────
+    //
+    // Step 1 — called when the user clicks "Sign in with Google":
+    //   • Generates a PKCE code_verifier + code_challenge (SHA-256 / base64url)
+    //   • Saves verifier + rememberMe preference to sessionStorage so the
+    //     callback can pick them up after the redirect
+    //   • Redirects the browser to Supabase /auth/v1/authorize
+    //
+    // Step 2 — called on login.html load when ?code= is present in the URL:
+    //   • Reads the verifier back from sessionStorage
+    //   • POSTs to /auth/v1/token?grant_type=pkce to exchange code → session
+    //   • Stores the session and fetches the profile exactly like password login
+
+    async signInWithGoogle({ remember = true, redirectTo } = {}) {
+      if (!isLiveConfigured) {
+        return { success: false, error: 'Supabase is not configured.' };
+      }
+
+      try {
+        // Generate PKCE verifier (43–128 random chars from unreserved alphabet)
+        const verifierBytes = new Uint8Array(48);
+        crypto.getRandomValues(verifierBytes);
+        const codeVerifier = btoa(String.fromCharCode(...verifierBytes))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+        // SHA-256 hash → base64url
+        const encoder = new TextEncoder();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(codeVerifier));
+        const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+
+        // Persist verifier for the callback
+        try {
+          sessionStorage.setItem('af_oauth_verifier', codeVerifier);
+          sessionStorage.setItem('af_oauth_remember', remember ? '1' : '0');
+        } catch (_) {}
+
+        // Build the redirect_uri — always back to login.html in same directory
+        const redirect = redirectTo || (
+          window.location.href.split('?')[0].split('#')[0]
+            .replace(/[^/]*$/, '') + 'login.html'
+        );
+
+        const params = new URLSearchParams({
+          provider:              'google',
+          redirect_to:           redirect,
+          code_challenge:        codeChallenge,
+          code_challenge_method: 'S256',
+        });
+
+        console.log('[AccessFill OAuth] redirecting to Google →', SUPABASE_CONFIG.url + '/auth/v1/authorize');
+        window.location.href = `${SUPABASE_CONFIG.url}/auth/v1/authorize?${params.toString()}`;
+        // Never resolves — browser navigates away
+        return { success: true, redirecting: true };
+
+      } catch (err) {
+        console.error('[AccessFill OAuth] signInWithGoogle error:', sanitizeLogPayload(err));
+        return { success: false, error: err.message || 'Could not start Google sign-in.' };
+      }
+    }
+
+    /**
+     * Call this on login.html load. Checks for ?code= in the URL and, if
+     * present, exchanges it for a session. Returns:
+     *   { pending: true }   — a code was found and is being exchanged
+     *   { success: true }   — exchange complete; caller should redirect
+     *   { success: false, error } — exchange failed
+     *   null                — no OAuth code in URL; nothing to do
+     */
+    async handleOAuthCallback() {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const errorParam = params.get('error');
+      const errorDesc = params.get('error_description');
+
+      // User cancelled or provider error
+      if (errorParam) {
+        console.warn('[AccessFill OAuth] callback error from provider:', errorParam, errorDesc);
+        // Clean the URL so refreshing doesn't re-trigger
+        try {
+          history.replaceState({}, '', window.location.pathname);
+        } catch (_) {}
+        return {
+          success: false,
+          cancelled: errorParam === 'access_denied',
+          error: errorDesc || errorParam,
+        };
+      }
+
+      if (!code) return null; // Not an OAuth callback
+
+      console.log('[AccessFill OAuth] code received — exchanging for session');
+
+      // Retrieve the PKCE verifier saved before the redirect
+      let codeVerifier = null;
+      let remember = true;
+      try {
+        codeVerifier = sessionStorage.getItem('af_oauth_verifier');
+        remember = sessionStorage.getItem('af_oauth_remember') !== '0';
+        sessionStorage.removeItem('af_oauth_verifier');
+        sessionStorage.removeItem('af_oauth_remember');
+      } catch (_) {}
+
+      if (!codeVerifier) {
+        console.error('[AccessFill OAuth] code_verifier missing from sessionStorage');
+        try { history.replaceState({}, '', window.location.pathname); } catch (_) {}
+        return { success: false, error: 'Sign-in session expired — please try again.' };
+      }
+
+      // Clean the code from the URL immediately so a refresh doesn't retry
+      try { history.replaceState({}, '', window.location.pathname); } catch (_) {}
+
+      this.rememberMe = remember;
+
+      try {
+        const response = await fetch(`${SUPABASE_CONFIG.url}/auth/v1/token?grant_type=pkce`, {
+          method: 'POST',
+          headers: {
+            'apikey':        SUPABASE_CONFIG.anonKey,
+            'Content-Type':  'application/json',
+          },
+          body: JSON.stringify({ auth_code: code, code_verifier: codeVerifier }),
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok || !data || !data.access_token) {
+          const errMsg = (data && (data.error_description || data.message || data.error)) ||
+            `Token exchange failed (HTTP ${response.status})`;
+          console.error('[AccessFill OAuth] token exchange failed:', sanitizeLogPayload(data));
+          return { success: false, error: errMsg };
+        }
+
+        this.session = sessionFromAuthPayload(data, null);
+        this.isDemoMode = false;
+
+        // Fetch/create profile — same as password login
+        try {
+          this.profile = await this.fetchFullUserProfileRLS();
+        } catch (_) {
+          this.profile = null;
+        }
+
+        // If this is a brand-new Google user, seed minimal profile from OAuth metadata
+        const meta = this.session.user && this.session.user.user_metadata;
+        if (meta && (!this.profile || !this.profile.full_name)) {
+          try {
+            await this.saveFullUserProfileRLS({
+              full_name: meta.full_name || meta.name || '',
+              email: (this.session.user && this.session.user.email) || meta.email || '',
+              preferred_language: 'en',
+            });
+            this.profile = await this.fetchFullUserProfileRLS();
+          } catch (_) {}
+        }
+
+        this._persist();
+        console.log('[AccessFill OAuth] Google sign-in complete ✅');
+        return { success: true, session: this.session, profile: this.profile, isDemoMode: false };
+
+      } catch (err) {
+        console.error('[AccessFill OAuth] token exchange network error:', sanitizeLogPayload(err));
+        return { success: false, error: err.message || 'Network error completing Google sign-in.' };
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     async signOut() {
       if (!this.isDemoMode && this.session && this.session.access_token &&
           String(this.session.access_token).indexOf('mock-') !== 0) {
@@ -991,4 +1158,7 @@
   global.AccessFillSupabase = new SupabaseClientAdapter();
   global.AccessFillSupabase.sanitizeLogPayload = sanitizeLogPayload;
   global.AccessFillSupabaseConfig = SUPABASE_CONFIG;
+  // Convenience aliases for OAuth
+  global.AccessFillSupabase.signInWithGoogle    = global.AccessFillSupabase.signInWithGoogle.bind(global.AccessFillSupabase);
+  global.AccessFillSupabase.handleOAuthCallback = global.AccessFillSupabase.handleOAuthCallback.bind(global.AccessFillSupabase);
 })(typeof globalThis !== 'undefined' ? globalThis : window);
