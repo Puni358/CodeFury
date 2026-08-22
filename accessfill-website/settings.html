@@ -216,7 +216,6 @@
             <div class="relative w-full md:w-72">
               <select class="appearance-none min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 pr-14 font-body-md text-body-md text-on-surface focus:border-[3px] focus:border-primary focus:outline-none focus:shadow-focus-ring cursor-pointer" id="language-select" name="language">
                 <option value="en">English</option>
-                <option value="hi">Hindi</option>
                 <option value="kn">Kannada</option>
               </select>
               <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-5 text-on-surface-variant">
@@ -329,6 +328,7 @@
 
 <script src="supabase-web.js"></script>
 <script src="shared.js"></script>
+<script src="chat-widget.js"></script>
 <script>
   (async function pageInit() {
     if (await window.AF.guardAuth('settings')) return;
@@ -361,7 +361,7 @@
     function applyPrefsToForm(p) {
       fsRadios.forEach(r => { r.checked = (r.value === p.fontSize); });
       cRadios.forEach(r => { r.checked = (r.value === p.contrast); });
-      if (langSel) langSel.value = p.language;
+      if (langSel) langSel.value = (p.language === 'kn') ? 'kn' : 'en';
       if (voiceTog) voiceTog.checked = !!p.voice;
       if (animTog) animTog.checked = !!p.animations;
       if (simpTog) simpTog.checked = !!p.simplified;

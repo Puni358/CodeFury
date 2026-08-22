@@ -102,12 +102,11 @@
   };
 
   const geminiCache = Object.create(null);
-  const ttsCache = Object.create(null);
   let popoverEl = null;
   let activeBtn = null;
-  let voicesReady = false;
-  let geminiAudio = null;
-  let geminiAudioUrl = null;
+  // Per-instance audio state — managed by AF.makeTtsState() / AF.stopTtsState()
+  // so field-explain playback never clobbers the chat widget's audio element.
+  let ttsState = null;
 
   function prefsLang() {
     const raw = (window.AF && window.AF.readPrefs && window.AF.readPrefs().language) || 'en';
@@ -164,70 +163,30 @@
     return mapped ? FIELD_EXPLANATIONS[mapped] : null;
   }
 
-  function ensureVoices() {
-    return new Promise(function (resolve) {
-      if (!window.speechSynthesis) {
-        resolve([]);
-        return;
-      }
-      const existing = speechSynthesis.getVoices();
-      if (existing.length || voicesReady) {
-        voicesReady = true;
-        resolve(existing);
-        return;
-      }
-      const done = function () {
-        voicesReady = true;
-        speechSynthesis.removeEventListener('voiceschanged', done);
-        resolve(speechSynthesis.getVoices());
+  function updateExplainSpeakBtn(isPlaying) {
+    const btn = document.getElementById('af-explain-speak');
+    if (!btn) return;
+    const icon = btn.querySelector('.material-symbols-outlined');
+    const label = btn.querySelector('[data-af-speak-label]');
+    const isKn = prefsLang() === 'kn';
+    if (isPlaying) {
+      if (icon) icon.textContent = 'stop';
+      if (label) label.textContent = isKn ? 'ನಿಲ್ಲಿಸಿ' : 'Stop';
+      btn.setAttribute('aria-label', isKn ? 'ಓದುವುದನ್ನು ನಿಲ್ಲಿಸಿ' : 'Stop reading');
+    } else {
+      if (icon) icon.textContent = 'volume_up';
+      if (label) label.textContent = ui().readAloud;
+      btn.setAttribute('aria-label', ui().readAloud);
+    }
+  }
+
+  function _ensureTtsState() {
+    if (!ttsState && window.AF && window.AF.makeTtsState) {
+      ttsState = window.AF.makeTtsState();
+      ttsState.onStateChange = function (isPlaying) {
+        updateExplainSpeakBtn(isPlaying);
       };
-      speechSynthesis.addEventListener('voiceschanged', done);
-      setTimeout(done, 600);
-    });
-  }
-
-  function findKannadaVoice(voices) {
-    return (voices || []).find(function (v) {
-      const lang = String(v.lang || '').toLowerCase();
-      return lang === 'kn-in' || lang === 'kn' || lang.indexOf('kn-') === 0;
-    }) || null;
-  }
-
-  function findEnglishVoice(voices) {
-    return (voices || []).find(function (v) {
-      return String(v.lang || '').toLowerCase().indexOf('en') === 0;
-    }) || null;
-  }
-
-  function stopGeminiAudio() {
-    if (geminiAudio) {
-      try {
-        geminiAudio.pause();
-        geminiAudio.removeAttribute('src');
-        geminiAudio.load();
-      } catch (_) {}
     }
-    if (geminiAudioUrl) {
-      URL.revokeObjectURL(geminiAudioUrl);
-      geminiAudioUrl = null;
-    }
-  }
-
-  function b64ToBlob(b64, mime) {
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return new Blob([bytes], { type: mime || 'audio/wav' });
-  }
-
-  function playAudioBlob(blob) {
-    stopGeminiAudio();
-    if (window.speechSynthesis) speechSynthesis.cancel();
-    geminiAudioUrl = URL.createObjectURL(blob);
-    if (!geminiAudio) geminiAudio = new Audio();
-    geminiAudio.src = geminiAudioUrl;
-    const play = geminiAudio.play();
-    if (play && typeof play.catch === 'function') play.catch(function () {});
   }
 
   function setSpeakBusy(busy) {
@@ -235,90 +194,29 @@
     if (!btn) return;
     const label = btn.querySelector('[data-af-speak-label]');
     btn.disabled = !!busy;
-    if (label) label.textContent = busy ? ui().generating : ui().readAloud;
+    if (label) label.textContent = busy ? ui().generating : (ttsState && ttsState.isPlaying ? (prefsLang() === 'kn' ? 'ನಿಲ್ಲಿಸಿ' : 'Stop') : ui().readAloud);
   }
 
-  async function speakViaBrowser(text, lang, noteEl) {
-    if (!window.speechSynthesis) {
-      if (noteEl) {
-        noteEl.hidden = false;
-        noteEl.textContent = lang === 'kn'
-          ? ui().voiceMissingKn
-          : 'Voice not available on this device — showing text only';
-      }
-      return;
-    }
-    speechSynthesis.cancel();
-    const voices = await ensureVoices();
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (lang === 'kn') {
-      const knVoice = findKannadaVoice(voices);
-      if (!knVoice) {
-        if (noteEl) {
-          noteEl.hidden = false;
-          noteEl.textContent = ui().voiceMissingKn;
-        }
-        const enVoice = findEnglishVoice(voices);
-        utterance.lang = 'en-US';
-        if (enVoice) utterance.voice = enVoice;
-      } else {
-        if (noteEl) noteEl.hidden = true;
-        utterance.lang = knVoice.lang || 'kn-IN';
-        utterance.voice = knVoice;
-      }
-    } else {
-      if (noteEl) noteEl.hidden = true;
-      utterance.lang = 'en-US';
-      const enVoice = findEnglishVoice(voices);
-      if (enVoice) utterance.voice = enVoice;
-    }
-    try {
-      speechSynthesis.speak(utterance);
-    } catch (_) {
-      if (noteEl) {
-        noteEl.hidden = false;
-        noteEl.textContent = 'Voice not available on this device — showing text only';
-      }
-    }
+  function stopAudio() {
+    _ensureTtsState();
+    if (window.AF && window.AF.stopTtsState) window.AF.stopTtsState(ttsState);
+    else if (window.speechSynthesis) speechSynthesis.cancel();
   }
 
-  async function speakText(text, lang, noteEl) {
+  async function speakText(text, lang, noteEl, btn) {
     const clipped = String(text || '').trim();
     if (!clipped) return;
-    stopGeminiAudio();
-    if (window.speechSynthesis) speechSynthesis.cancel();
 
-    const cacheKey = lang + '::' + clipped;
-    const cached = ttsCache[cacheKey];
-    if (cached && cached.b64) {
-      playAudioBlob(b64ToBlob(cached.b64, cached.mime));
-      return;
+    _ensureTtsState();
+
+    if (window.AF && typeof window.AF.speakText === 'function') {
+      await window.AF.speakText(clipped, lang, {
+        noteEl,
+        audioState: ttsState,
+        onBusy: setSpeakBusy,
+        btn: btn || document.getElementById('af-explain-speak'),
+      });
     }
-
-    const sb = window.AccessFillSupabase;
-    if (sb && typeof sb.invokeTextToSpeech === 'function') {
-      setSpeakBusy(true);
-      try {
-        const result = await sb.invokeTextToSpeech({ text: clipped, language: lang });
-        if (result && result.success && result.audioBase64) {
-          ttsCache[cacheKey] = { b64: result.audioBase64, mime: result.mimeType || 'audio/wav' };
-          playAudioBlob(b64ToBlob(result.audioBase64, result.mimeType));
-          setSpeakBusy(false);
-          return;
-        }
-        console.log('[AccessFill TTS] gemini unavailable, using browser voice', {
-          error: result && result.error,
-          demo: result && result.demo
-        });
-      } catch (err) {
-        if (sb.sanitizeLogPayload) {
-          console.error('[AccessFill TTS] playback failed', sb.sanitizeLogPayload(err));
-        }
-      }
-      setSpeakBusy(false);
-    }
-
-    await speakViaBrowser(clipped, lang, noteEl);
   }
 
   async function getExplanation(key, label) {
@@ -370,9 +268,10 @@
 
     popoverEl.querySelector('[data-af-explain-close]').addEventListener('click', closePopover);
     popoverEl.querySelector('#af-explain-speak').addEventListener('click', function () {
+      const btn = this;
       const body = document.getElementById('af-explain-body');
       const note = document.getElementById('af-explain-note');
-      speakText(body.textContent || '', prefsLang(), note);
+      speakText(body.textContent || '', prefsLang(), note, btn);
     });
 
     document.addEventListener('pointerdown', function (e) {
@@ -413,8 +312,7 @@
 
   function closePopover() {
     if (!popoverEl) return;
-    stopGeminiAudio();
-    if (window.speechSynthesis) speechSynthesis.cancel();
+    stopAudio();
     setSpeakBusy(false);
     popoverEl.hidden = true;
     if (activeBtn) {
@@ -445,11 +343,19 @@
     popoverEl.hidden = false;
     positionPopover(btn);
 
-    const voices = await ensureVoices();
-    if (prefsLang() === 'kn' && !findKannadaVoice(voices)) {
-      const note = popoverEl.querySelector('#af-explain-note');
-      note.hidden = false;
-      note.textContent = strings.voiceMissingKn;
+    // Show voice-missing note up-front for Kannada if no kn voice is available.
+    // Use AF's internal voice loader so we don't duplicate the wait logic.
+    if (prefsLang() === 'kn' && window.speechSynthesis) {
+      const voices = speechSynthesis.getVoices();
+      const hasKn = voices.some(function (v) {
+        const l = String(v.lang || '').toLowerCase();
+        return l === 'kn-in' || l === 'kn' || l.indexOf('kn-') === 0;
+      });
+      if (!hasKn) {
+        const note = popoverEl.querySelector('#af-explain-note');
+        note.hidden = false;
+        note.textContent = strings.voiceMissingKn;
+      }
     }
 
     try {
@@ -531,11 +437,5 @@
     window.AF.FIELD_EXPLANATIONS = FIELD_EXPLANATIONS;
     window.AF.attachFieldExplanations = attachFieldExplanations;
     window.AF.refreshExplainLanguage = refreshExplainLanguage;
-  }
-
-  if (typeof speechSynthesis !== 'undefined') {
-    speechSynthesis.addEventListener('voiceschanged', function () {
-      voicesReady = true;
-    });
   }
 })();

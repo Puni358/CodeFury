@@ -159,7 +159,8 @@
     const c = read('af_prefs_contrast', 'normal');
     document.documentElement.setAttribute('data-contrast', c);
 
-    document.documentElement.setAttribute('lang', read('af_prefs_language', 'en'));
+    const rawLang = read('af_prefs_language', 'en');
+    document.documentElement.setAttribute('lang', rawLang === 'kn' ? 'kn' : 'en');
 
     const simp = read('af_simplified', 'off');
     document.documentElement.setAttribute('data-simplified-ui', simp);
@@ -215,10 +216,11 @@
   }
 
   function readPrefs() {
+    const rawLang = read('af_prefs_language', 'en');
     return {
       fontSize:   read('af_prefs_fontSize', 'medium'),
       contrast:   read('af_prefs_contrast', 'normal'),
-      language:   read('af_prefs_language', 'en'),
+      language:   rawLang === 'kn' ? 'kn' : 'en',
       voice:      read('af_prefs_voice', 'off') === 'on',
       animations: read('af_animations', null) === null
                     ? !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
@@ -328,6 +330,260 @@
     else if (mql.addListener) mql.addListener(onChange);
   }
 
+  /* ================================================================
+     Shared TTS utility — single implementation used by field-explain.js
+     and chat-widget.js. Previously duplicated in both; now canonical here.
+
+     AF.speakText(text, lang, opts?)
+       text    — string to speak
+       lang    — 'en' | 'kn'
+       opts    — optional object:
+           noteEl      HTMLElement | null  — shown/hidden with voice-missing warning
+           onBusy      function(bool)      — called with true when TTS starts, false when done
+           audioState  object              — { audio, audioUrl } refs managed by caller
+                                             so each call-site has its own audio element
+                                             (prevents field-explain and chat clobbering each other)
+
+     Returns a Promise that resolves when playback has started (or fallen
+     back to browser speech). Callers do not need to await it for UX purposes
+     but may if they want sequential behaviour.
+  ================================================================ */
+
+  // Shared voice-loading promise — avoids multiple concurrent voiceschanged waits
+  let _voicesReady = false;
+  function _ensureVoices() {
+    return new Promise(function (resolve) {
+      if (!window.speechSynthesis) { resolve([]); return; }
+      const existing = speechSynthesis.getVoices();
+      if (existing.length || _voicesReady) { _voicesReady = true; resolve(existing); return; }
+      const done = function () {
+        _voicesReady = true;
+        speechSynthesis.removeEventListener('voiceschanged', done);
+        resolve(speechSynthesis.getVoices());
+      };
+      speechSynthesis.addEventListener('voiceschanged', done);
+      setTimeout(done, 600);  // fallback if event never fires
+    });
+  }
+
+  function _findVoice(voices, lang) {
+    const target = lang === 'kn' ? 'kn' : 'en';
+    return (voices || []).find(function (v) {
+      return String(v.lang || '').toLowerCase().indexOf(target) === 0;
+    }) || null;
+  }
+
+  // Per-call-site audio state factory — callers pass in their own state
+  // object so field-explain and chat-widget each control their own playback.
+  function _makeTtsState() {
+    return {
+      audio: null,
+      audioUrl: null,
+      isPlaying: false,
+      activeBtn: null,
+      currentText: null,
+      onStateChange: null, // function(isPlaying, activeBtn)
+    };
+  }
+
+  function _notifyStateChange(state) {
+    if (state && typeof state.onStateChange === 'function') {
+      try { state.onStateChange(state.isPlaying, state.activeBtn); } catch (_) {}
+    }
+  }
+
+  function _stopTtsState(state) {
+    if (!state) return;
+    const wasPlaying = state.isPlaying;
+    const oldBtn = state.activeBtn;
+    state.isPlaying = false;
+    state.activeBtn = null;
+    state.currentText = null;
+
+    if (state.audio) {
+      try {
+        state.audio.pause();
+        state.audio.currentTime = 0;
+        state.audio.removeAttribute('src');
+        state.audio.load();
+      } catch (_) {}
+    }
+    if (state.audioUrl) {
+      try { URL.revokeObjectURL(state.audioUrl); } catch (_) {}
+      state.audioUrl = null;
+    }
+    if (window.speechSynthesis) {
+      try { speechSynthesis.cancel(); } catch (_) {}
+    }
+
+    if (wasPlaying || oldBtn) {
+      _notifyStateChange(state);
+    }
+  }
+
+  function _b64ToBlob(b64, mime) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime || 'audio/wav' });
+  }
+
+  function _playBlobOnState(state, blob, opts) {
+    _stopTtsState(state);
+    const options = opts || {};
+    state.activeBtn = options.btn || null;
+    state.currentText = options.text || null;
+    state.audioUrl = URL.createObjectURL(blob);
+    if (!state.audio) state.audio = new Audio();
+
+    const onPlay = function () {
+      state.isPlaying = true;
+      _notifyStateChange(state);
+    };
+    const onEndedOrPause = function () {
+      if (state.isPlaying) {
+        state.isPlaying = false;
+        state.currentText = null;
+        _notifyStateChange(state);
+      }
+    };
+
+    state.audio.onplay = onPlay;
+    state.audio.onended = onEndedOrPause;
+    state.audio.onpause = onEndedOrPause;
+    state.audio.onerror = onEndedOrPause;
+
+    state.audio.src = state.audioUrl;
+    const p = state.audio.play();
+    if (p && typeof p.catch === 'function') p.catch(function () {});
+  }
+
+  // Shared TTS cache — keyed 'lang::text', shared across call-sites because
+  // the same text+lang will always produce the same audio
+  const _ttsCache = Object.create(null);
+
+  async function speakText(text, lang, opts) {
+    const clipped = String(text || '').trim();
+    if (!clipped) return;
+
+    const options   = opts || {};
+    const noteEl    = options.noteEl   || null;
+    const onBusy    = options.onBusy   || null;
+    const state     = options.audioState || _makeTtsState();
+    const btn       = options.btn || null;
+
+    // If audio is ALREADY playing on this state for the same button / text, toggle OFF (stop)
+    if (state.isPlaying && (state.activeBtn === btn || state.currentText === clipped)) {
+      _stopTtsState(state);
+      return;
+    }
+
+    _stopTtsState(state);
+    if (window.speechSynthesis) {
+      try { speechSynthesis.cancel(); } catch (_) {}
+    }
+
+    const targetLang = lang === 'kn' ? 'kn' : 'en';
+    const cacheKey = targetLang + '::' + clipped;
+    const cached = _ttsCache[cacheKey];
+    if (cached) {
+      _playBlobOnState(state, _b64ToBlob(cached.b64, cached.mime), { btn, text: clipped });
+      return;
+    }
+
+    const clientSb = window.AccessFillSupabase;
+    if (clientSb && typeof clientSb.invokeTextToSpeech === 'function') {
+      if (onBusy) onBusy(true);
+      try {
+        const result = await clientSb.invokeTextToSpeech({ text: clipped, language: targetLang });
+        if (result && result.success && result.audioBase64) {
+          _ttsCache[cacheKey] = { b64: result.audioBase64, mime: result.mimeType || 'audio/wav' };
+          _playBlobOnState(state, _b64ToBlob(result.audioBase64, result.mimeType), { btn, text: clipped });
+          if (onBusy) onBusy(false);
+          return;
+        }
+        // TTS call succeeded but returned no audio (demo mode, rate limit, etc.)
+        console.log('[AccessFill TTS] gemini unavailable, using browser voice', {
+          error: result && result.error,
+          demo:  result && result.demo,
+        });
+      } catch (err) {
+        const logErr = clientSb.sanitizeLogPayload ? clientSb.sanitizeLogPayload(err) : { message: err && err.message };
+        console.error('[AccessFill TTS] invokeTextToSpeech threw', logErr);
+      }
+      if (onBusy) onBusy(false);
+    }
+
+    // Browser speechSynthesis fallback — wait for voices to be ready first
+    if (!window.speechSynthesis) {
+      if (noteEl) {
+        noteEl.hidden = false;
+        noteEl.textContent = targetLang === 'kn'
+          ? 'ಈ ಸಾಧನದಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ — ಪಠ್ಯ ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತಿದೆ'
+          : 'Voice not available on this device — showing text only';
+      }
+      return;
+    }
+
+    speechSynthesis.cancel();
+    const voices = await _ensureVoices();
+    const utt = new SpeechSynthesisUtterance(clipped);
+
+    if (targetLang === 'kn') {
+      const knVoice = _findVoice(voices, 'kn');
+      if (!knVoice) {
+        if (noteEl) {
+          noteEl.hidden = false;
+          noteEl.textContent = 'ಈ ಸಾಧನದಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ — ಪಠ್ಯ ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತಿದೆ';
+        }
+        utt.lang = 'en-US';
+        const enVoice = _findVoice(voices, 'en');
+        if (enVoice) utt.voice = enVoice;
+      } else {
+        if (noteEl) noteEl.hidden = true;
+        utt.lang = knVoice.lang || 'kn-IN';
+        utt.voice = knVoice;
+      }
+    } else {
+      if (noteEl) noteEl.hidden = true;
+      utt.lang = 'en-US';
+      const enVoice = _findVoice(voices, 'en');
+      if (enVoice) utt.voice = enVoice;
+    }
+
+    utt.onstart = function () {
+      state.isPlaying = true;
+      state.activeBtn = btn;
+      state.currentText = clipped;
+      _notifyStateChange(state);
+    };
+    utt.onend = function () {
+      state.isPlaying = false;
+      state.activeBtn = null;
+      state.currentText = null;
+      _notifyStateChange(state);
+    };
+    utt.onerror = function () {
+      state.isPlaying = false;
+      state.activeBtn = null;
+      state.currentText = null;
+      _notifyStateChange(state);
+    };
+
+    try {
+      speechSynthesis.speak(utt);
+    } catch (_) {
+      state.isPlaying = false;
+      state.activeBtn = null;
+      state.currentText = null;
+      _notifyStateChange(state);
+      if (noteEl) {
+        noteEl.hidden = false;
+        noteEl.textContent = 'Voice not available on this device — showing text only';
+      }
+    }
+  }
+
   window.AF = {
     PAGES, url,
     getSession, isLoggedIn, isOnboarded, isDemoMode, login, logout, completeOnboarding,
@@ -336,6 +592,11 @@
     guardAuth, renderHeader, renderFooter,
     markConsentSeen, qs, escapeHtml,
     wireMotionMQ,
+    // TTS — single shared implementation; field-explain.js and chat-widget.js both delegate here
+    speakText,
+    makeTtsState:  _makeTtsState,
+    stopTtsState:  _stopTtsState,
+    isTtsPlaying:  function (state) { return !!(state && state.isPlaying); },
   };
 })();
 

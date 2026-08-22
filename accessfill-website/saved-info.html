@@ -107,7 +107,6 @@
             <select id="edit-language" name="preferred_language"
                     class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring">
               <option value="en">English</option>
-              <option value="hi">हिंदी (Hindi)</option>
               <option value="kn">ಕನ್ನಡ (Kannada)</option>
             </select>
           </div>
@@ -196,6 +195,7 @@
 <script src="supabase-web.js"></script>
 <script src="shared.js"></script>
 <script src="field-explain.js"></script>
+<script src="chat-widget.js"></script>
 <script>
   (async function pageInit() {
     if (await window.AF.guardAuth('savedInfo')) return;
@@ -266,7 +266,8 @@
       phoneInput.value = String(p.phone || '').replace(/\D/g, '').slice(0, 10);
       const dob = p.date_of_birth ? String(p.date_of_birth).slice(0, 10) : '';
       dobInput.value = dob;
-      document.getElementById('edit-language').value = p.preferred_language || 'en';
+      const prefLang = p.preferred_language === 'kn' ? 'kn' : 'en';
+      document.getElementById('edit-language').value = prefLang;
       document.getElementById('edit-address1').value = p.address_line1 || '';
       document.getElementById('edit-address2').value = p.address_line2 || '';
       document.getElementById('edit-city').value = p.city || '';
