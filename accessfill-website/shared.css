@@ -130,3 +130,126 @@ html[data-contrast="extra-high"] .shadow-card {
 }
 html[data-contrast="extra-high"] .bg-primary { background-color: #0A3A54 !important; }
 html[data-contrast="extra-high"] .bg-consent { background-color: #1B5038 !important; }
+
+/* ---------- Explain-this field helper ---------- */
+.af-explain-label-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.af-explain-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: #1A4D6B;
+  cursor: pointer;
+  font-family: inherit;
+}
+.af-explain-btn:hover {
+  background: #D6E6EE;
+  border-color: rgba(26, 77, 107, 0.2);
+}
+.af-explain-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(26, 77, 107, 0.25);
+}
+.af-explain-btn .material-symbols-outlined {
+  font-size: 22px;
+  line-height: 1;
+}
+.af-explain-btn-text {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.af-explain-popover {
+  position: absolute;
+  z-index: 80;
+  max-width: 22rem;
+  padding: 16px;
+  border-radius: 16px;
+  border: 2px solid #E5E1D8;
+  background: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(31, 41, 55, 0.12), 0 0 0 2px #E5E1D8;
+  color: #1F2937;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.af-explain-popover[hidden] {
+  display: none;
+}
+.af-explain-popover-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.af-explain-popover-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 24px;
+  padding-top: 8px;
+}
+.af-explain-body {
+  margin: 0 0 12px;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  color: #4B5563;
+}
+.af-explain-note {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 600;
+  color: #4A2E19;
+  background: #EDE0D5;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.af-explain-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #1F2937;
+  cursor: pointer;
+}
+.af-explain-close:focus,
+.af-explain-speak:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(26, 77, 107, 0.25);
+}
+.af-explain-speak {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  width: 100%;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 2px solid #1A4D6B;
+  background: #D6E6EE;
+  color: #0B2C42;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}

@@ -438,6 +438,7 @@
     }));
     if (langSel) langSel.addEventListener('change', () => {
       window.AF.savePrefs({ language: langSel.value });
+      if (window.AF.refreshExplainLanguage) window.AF.refreshExplainLanguage();
     });
 
     resetBtn.addEventListener('click', () => {

@@ -195,11 +195,13 @@
 
 <script src="supabase-web.js"></script>
 <script src="shared.js"></script>
+<script src="field-explain.js"></script>
 <script>
   (async function pageInit() {
     if (await window.AF.guardAuth('savedInfo')) return;
     window.AF.renderHeader('savedInfo');
     window.AF.renderFooter();
+    window.AF.attachFieldExplanations(document.getElementById('profile-form'));
 
     const sb = window.AccessFillSupabase;
     const todayStr = new Date().toISOString().split('T')[0];

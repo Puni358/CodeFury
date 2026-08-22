@@ -648,6 +648,38 @@
       }
     }
 
+    /**
+     * Ask Gemini (via Edge Function) to explain an unknown field.
+     * Sends only field_key / field_label / language — never field values.
+     */
+    async invokeExplainFormField({ fieldKey, fieldLabel, language }) {
+      const key = String(fieldKey || '').slice(0, 80);
+      const label = String(fieldLabel || '').slice(0, 120);
+      const lang = language === 'kn' ? 'kn' : 'en';
+      console.log("[AccessFill Explain] invoke", { field_key: key, language: lang });
+      if (!this.isLiveSession()) {
+        return { success: false, demo: true, error: 'explain_skipped_demo' };
+      }
+      try {
+        const res = await fetch(SUPABASE_CONFIG.url + '/functions/v1/explain-form-field', {
+          method: 'POST',
+          headers: this._authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ field_key: key, field_label: label, language: lang })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.explanation) {
+          console.error("[AccessFill Explain] failed", { status: res.status, error: data && data.error });
+          if (data) console.error("[AccessFill Explain] error object:", sanitizeLogPayload(data));
+          return { success: false, error: (data && data.error) || formatApiError(data, res.status) };
+        }
+        console.log("[AccessFill Explain] ok", { field_key: key, language: lang });
+        return { success: true, explanation: String(data.explanation) };
+      } catch (err) {
+        console.error("[AccessFill Explain] network error:", sanitizeLogPayload(err));
+        return { success: false, error: err.message };
+      }
+    }
+
     async insertUploadedDocument({ documentType, storagePath, extractedFields, confirmed }) {
       if (!this.isLiveSession()) {
         const row = {

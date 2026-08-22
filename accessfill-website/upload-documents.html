@@ -134,11 +134,13 @@
 
 <script src="supabase-web.js"></script>
 <script src="shared.js"></script>
+<script src="field-explain.js"></script>
 <script>
   (async function pageInit() {
     if (await window.AF.guardAuth('uploadDocs')) return;
     window.AF.renderHeader('uploadDocs');
     window.AF.renderFooter();
+    window.AF.attachFieldExplanations(document.getElementById('panel-review'));
 
     const sb = window.AccessFillSupabase;
     const pick = document.getElementById('panel-pick');
