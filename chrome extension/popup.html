@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AccessFill - Accessibility Autofill Assistant</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="accessfill-popup-body">
+  <div class="accessfill-app-container">
+    
+    <!-- Top Header & Language Controls -->
+    <header class="accessfill-header">
+      <div class="accessfill-brand">
+        <div class="accessfill-logo-icon">⚡</div>
+        <div>
+          <h1 class="accessfill-title">AccessFill</h1>
+          <p class="accessfill-subtitle" id="app-tagline">Autofill Assistant for Everyone</p>
+        </div>
+      </div>
+      <div class="accessfill-lang-toggle" role="group" aria-label="Language Selector">
+        <button id="lang-en" class="lang-btn active" aria-pressed="true">EN</button>
+        <button id="lang-hi" class="lang-btn" aria-pressed="false">हिंदी</button>
+      </div>
+    </header>
+
+    <!-- Notification / Status Banner for Errors and Messages -->
+    <div id="status-banner" class="status-banner hidden" role="status" aria-live="polite"></div>
+
+    <!-- VIEW 1: SIGNED OUT STATE (SIGN IN / SIGN UP TABS) -->
+    <section id="signed-out-view" class="accessfill-view">
+      <div class="accessfill-auth-card">
+        
+        <!-- Auth Navigation Tabs -->
+        <div class="auth-tabs" role="tablist">
+          <button id="tab-signin" class="auth-tab active" role="tab" aria-selected="true" aria-controls="panel-signin">Sign In</button>
+          <button id="tab-signup" class="auth-tab" role="tab" aria-selected="false" aria-controls="panel-signup">Sign Up</button>
+        </div>
+
+        <!-- TAB 1: SIGN IN FORM -->
+        <div id="panel-signin" class="auth-panel" role="tabpanel" aria-labelledby="tab-signin">
+          <form id="form-signin" class="auth-form">
+            <div class="form-field">
+              <label for="signin-email">Email Address</label>
+              <input type="email" id="signin-email" placeholder="name@example.com" required autocomplete="email">
+            </div>
+            <div class="form-field">
+              <label for="signin-password">Password</label>
+              <input type="password" id="signin-password" placeholder="••••••••" required autocomplete="current-password">
+            </div>
+            <button type="submit" id="btn-submit-signin" class="btn btn-primary btn-block">
+              <span class="btn-icon">🔑</span>
+              <span>Sign In with Password</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- TAB 2: SIGN UP FORM -->
+        <div id="panel-signup" class="auth-panel hidden" role="tabpanel" aria-labelledby="tab-signup">
+          <form id="form-signup" class="auth-form">
+            <div class="form-field">
+              <label for="signup-fullname">Full Name</label>
+              <input type="text" id="signup-fullname" placeholder="e.g. Aarav Sharma" required autocomplete="name">
+            </div>
+            <div class="form-field">
+              <label for="signup-email">Email Address</label>
+              <input type="email" id="signup-email" placeholder="name@example.com" required autocomplete="email">
+            </div>
+            <div class="form-field">
+              <label for="signup-password">Password (Min 6 chars)</label>
+              <input type="password" id="signup-password" placeholder="••••••••" required minlength="6" autocomplete="new-password">
+            </div>
+            <button type="submit" id="btn-submit-signup" class="btn btn-primary btn-block">
+              <span class="btn-icon">✨</span>
+              <span>Create Account</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- DEMO MODE FALLBACK BUTTON -->
+        <div class="auth-divider">
+          <span>OR</span>
+        </div>
+        
+        <button id="btn-demo-signin" class="btn btn-secondary btn-block">
+          <span class="btn-icon">🚀</span>
+          <span id="label-demo-signin">Instant Demo Mode (Mock Profile)</span>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: SIGNED IN STATE -->
+    <section id="signed-in-view" class="accessfill-view hidden">
+      <!-- User Profile Header & Distinct Mode Badge -->
+      <div class="user-profile-bar">
+        <div class="user-avatar" id="user-avatar">AS</div>
+        <div class="user-info">
+          <span class="user-name" id="user-name-display">Aarav Sharma</span>
+          
+          <!-- VISUAL MODE INDICATOR (Live vs Demo) -->
+          <div id="session-mode-badge" class="session-badge badge-demo">
+            <span class="badge-dot">●</span>
+            <span id="session-mode-text">Instant Demo Mode</span>
+          </div>
+        </div>
+        <!-- PROMINENT RED OUTLINED LOGOUT BUTTON -->
+        <button id="btn-signout" class="btn-logout" aria-label="Sign Out" title="Sign Out">
+          <span>🚪</span>
+          <span>Sign Out</span>
+        </button>
+      </div>
+
+      <!-- Action Panel -->
+      <div class="action-card">
+        <div class="action-buttons-grid">
+          <button id="btn-scan-page" class="btn btn-secondary">
+            <span class="btn-icon">🔍</span>
+            <span id="label-scan-page">Scan Page</span>
+          </button>
+          <button id="btn-fill-form" class="btn btn-primary">
+            <span class="btn-icon">✨</span>
+            <span id="label-fill-form">Fill Form</span>
+          </button>
+        </div>
+
+        <!-- Scan Result Info Badge -->
+        <div id="scan-summary-card" class="scan-summary-card hidden">
+          <div class="scan-summary-icon">📋</div>
+          <div class="scan-summary-text" id="scan-summary-text">Found 0 matchable fields</div>
+        </div>
+      </div>
+
+      <!-- Profile Summary Accordion / Section -->
+      <div class="profile-section">
+        <div class="section-header">
+          <h2 class="section-title" id="label-profile-summary">Stored Profile Data</h2>
+          <button id="btn-toggle-edit" class="btn-link" aria-expanded="false">Edit Profile</button>
+        </div>
+
+        <!-- Masked Profile Card (Default View) -->
+        <div id="profile-summary-list" class="profile-summary-list">
+          <div class="profile-data-row">
+            <span class="data-label">Full Name:</span>
+            <span class="data-value" id="val-fullname">Not Provided</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="data-label">Email:</span>
+            <span class="data-value" id="val-email">Not Provided</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="data-label" id="lbl-aadhaar">Aadhaar Card (sensitive_ids):</span>
+            <span class="data-value masked" id="val-aadhaar">XXXX-XXXX-4738</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="data-label" id="lbl-pan">PAN Number (sensitive_ids):</span>
+            <span class="data-value masked" id="val-pan">XXXXXX1234F</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="data-label" id="lbl-phone">Phone Number:</span>
+            <span class="data-value masked" id="val-phone">XXXXXX4321</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="data-label">Date of Birth:</span>
+            <span class="data-value" id="val-dob">Not Provided</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="data-label" id="lbl-address">Address:</span>
+            <span class="data-value" id="val-address">Not Provided</span>
+          </div>
+          <div class="profile-data-row">
+            <span class="data-label" id="lbl-emergency">Emergency Contact:</span>
+            <span class="data-value" id="val-emergency">Not Provided</span>
+          </div>
+        </div>
+
+        <!-- Inline Profile Form Editor (Hidden by default) -->
+        <form id="profile-edit-form" class="profile-edit-form hidden" novalidate>
+          <!-- profiles table fields -->
+          <div class="form-group-title">👤 General Information (profiles table)</div>
+          
+          <div class="form-field">
+            <label for="edit-full-name">Full Name *</label>
+            <input type="text" id="edit-full-name" placeholder="e.g. Aarav Sharma" required>
+          </div>
+
+          <div class="form-field">
+            <label for="edit-email">Email Address</label>
+            <input type="email" id="edit-email" placeholder="name@example.com">
+          </div>
+
+          <div class="form-field">
+            <label for="edit-phone">Phone Number (10 digits only)</label>
+            <input type="tel" id="edit-phone" placeholder="9876543210" maxlength="10">
+            <span id="err-phone" class="input-error-msg hidden">Phone must be exactly 10 digits.</span>
+          </div>
+
+          <div class="form-field">
+            <label for="edit-dob">Date of Birth (Past dates only)</label>
+            <input type="date" id="edit-dob">
+            <span id="err-dob" class="input-error-msg hidden">Date of birth cannot be in the future.</span>
+          </div>
+
+          <div class="form-field">
+            <label for="edit-language">Preferred Language</label>
+            <select id="edit-language">
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+            </select>
+          </div>
+
+          <div class="form-group-title">🏠 Address Details (profiles table)</div>
+
+          <div class="form-field">
+            <label for="edit-address1">Address Line 1</label>
+            <input type="text" id="edit-address1" placeholder="Flat / House No / Street">
+          </div>
+
+          <div class="form-field">
+            <label for="edit-address2">Address Line 2</label>
+            <input type="text" id="edit-address2" placeholder="Locality / Landmark">
+          </div>
+
+          <div class="form-field">
+            <label for="edit-city">City</label>
+            <input type="text" id="edit-city" placeholder="e.g. Bengaluru">
+          </div>
+
+          <div class="form-field">
+            <label for="edit-state">State</label>
+            <input type="text" id="edit-state" placeholder="e.g. Karnataka">
+          </div>
+
+          <div class="form-field">
+            <label for="edit-zip">PIN / Zip Code</label>
+            <input type="text" id="edit-zip" placeholder="6-digit PIN code">
+          </div>
+
+          <div class="form-group-title">🚨 Emergency Contact (profiles table)</div>
+
+          <div class="form-field">
+            <label for="edit-emergency-name">Emergency Contact Name</label>
+            <input type="text" id="edit-emergency-name" placeholder="e.g. Priya Sharma">
+          </div>
+
+          <div class="form-field">
+            <label for="edit-emergency-phone">Emergency Contact Phone (10 digits)</label>
+            <input type="tel" id="edit-emergency-phone" placeholder="9812345678" maxlength="10">
+            <span id="err-emergency-phone" class="input-error-msg hidden">Emergency phone must be exactly 10 digits.</span>
+          </div>
+
+          <div class="form-group-title">🔒 Sensitive IDs (sensitive_ids table)</div>
+
+          <div class="form-field">
+            <label for="edit-aadhaar">Aadhaar Number (12 digits only)</label>
+            <input type="text" id="edit-aadhaar" placeholder="12-digit Aadhaar Number" maxlength="12">
+            <span id="err-aadhaar" class="input-error-msg hidden">Aadhaar number must be exactly 12 digits.</span>
+          </div>
+
+          <div class="form-field">
+            <label for="edit-pan">PAN Number (Format: ABCDE1234F)</label>
+            <input type="text" id="edit-pan" placeholder="10-char PAN (ABCDE1234F)" maxlength="10" style="text-transform: uppercase;">
+            <span id="err-pan" class="input-error-msg hidden">PAN must be 10 chars: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).</span>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="btn-save-profile" class="btn btn-primary btn-sm">Save All Profile Data</button>
+            <button type="button" id="btn-cancel-edit" class="btn btn-secondary btn-sm">Cancel</button>
+          </div>
+        </form>
+
+      </div>
+    </section>
+
+    <!-- Footer Privacy Note -->
+    <footer class="accessfill-footer">
+      <span class="privacy-tag">🔒 Zero PII Logging & Consent First</span>
+    </footer>
+
+  </div>
+
+  <script src="supabaseClient.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

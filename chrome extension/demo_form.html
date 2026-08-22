@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AccessFill - Form Autofill Test Suite</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #0f172a;
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 30px 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    header {
+      background: #1e293b;
+      color: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    header h1 { margin: 0 0 8px 0; font-size: 24px; color: #60a5fa; }
+    header p { margin: 0; font-size: 14px; color: #94a3b8; }
+    
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .card h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: var(--primary);
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .full-width { grid-column: span 2; }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+    }
+    input, select, textarea {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: 3px solid #2563eb;
+      outline-offset: 2px;
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: bold;
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-left: 6px;
+    }
+    .state-monitor {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .instructions {
+      background: #eff6ff;
+      border-left: 4px solid var(--primary);
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 14px;
+    }
+    .instructions ol { margin: 8px 0 0 20px; padding: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>⚡ AccessFill Test Form Portal</h1>
+      <p>Simulating Government KYC, Healthcare & Banking Digital Forms with Bilingual Support (English / हिन्दी)</p>
+    </header>
+
+    <div class="instructions">
+      <strong>How to test AccessFill Extension on this page:</strong>
+      <ol>
+        <li>Click the AccessFill extension icon in your Chrome toolbar.</li>
+        <li>Sign in or click <strong>Instant Demo Mode</strong>.</li>
+        <li>Click <strong>Scan Page</strong> to view detected fields.</li>
+        <li>Click <strong>Fill Form</strong>. Watch the sensitive consent tooltip trigger for Aadhaar & PAN!</li>
+        <li>Verify live registered values in the State Monitor box below.</li>
+      </ol>
+    </div>
+
+    <!-- FORM SECTION 1: Government & Identity KYC -->
+    <form id="kyc-demo-form" onsubmit="return false;">
+      <div class="card">
+        <h2>1. Citizen Identity & KYC Details (नागरिक पहचान)</h2>
+        <div class="form-grid">
+          
+          <div class="form-group">
+            <label for="applicant_name">Full Name / आवेदक का नाम <span class="badge">Layer 1</span></label>
+            <input type="text" id="applicant_name" name="full_name" autocomplete="name" placeholder="e.g. Aarav Sharma">
+          </div>
+
+          <div class="form-group">
+            <label for="uid_no">आधार संख्या / Aadhaar Number <span class="badge">Sensitive • Layer 2</span></label>
+            <input type="text" id="uid_no" placeholder="12 Digit Aadhaar Number">
+          </div>
+
+          <div class="form-group">
+            <label for="pan_input">Permanent Account Number (पैन नंबर) <span class="badge">Sensitive • Layer 2</span></label>
+            <input type="text" id="pan_input" placeholder="e.g. ABCDE1234F">
+          </div>
+
+          <div class="form-group">
+            <label for="phone_num">Mobile Contact / मोबाइल नंबर <span class="badge">Layer 1</span></label>
+            <input type="tel" id="phone_num" name="phone" autocomplete="tel" placeholder="10 Digit Mobile">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- FORM SECTION 2: Address & Emergency -->
+      <div class="card" style="margin-top: 20px;">
+        <h2>2. Residence & Healthcare Contact (पता और आपातकालीन संपर्क)</h2>
+        <div class="form-grid">
+
+          <div class="form-group full-width">
+            <label for="street_addr">Residential Address / आवासीय पता <span class="badge">Layer 2</span></label>
+            <textarea id="street_addr" rows="2" placeholder="House No, Street, Landmark"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="city_field">City / शहर <span class="badge">Layer 2</span></label>
+            <input type="text" id="city_field" placeholder="City or District">
+          </div>
+
+          <div class="form-group">
+            <label for="zip_code">PIN Code / डाक कोड <span class="badge">Layer 1</span></label>
+            <input type="text" id="zip_code" name="zip" autocomplete="postal-code" placeholder="6 Digit PIN Code">
+          </div>
+
+          <div class="form-group">
+            <label for="emergency_kin">आपातकालीन संपर्क / Emergency Phone <span class="badge">Sensitive • Layer 2</span></label>
+            <input type="text" id="emergency_kin" placeholder="Emergency Contact & Relationship">
+          </div>
+
+          <div class="form-group">
+            <label for="med_notes">Medical Condition / स्वास्थ्य स्थिति <span class="badge">Sensitive • Layer 2</span></label>
+            <input type="text" id="med_notes" placeholder="Blood group or allergies">
+          </div>
+
+          <div class="form-group full-width">
+            <label for="custom_unmatched">Custom Preferred Sector Code <span class="badge" style="background:#fee2e2; color:#991b1b;">Layer 3 (Unmatched LLM Stub)</span></label>
+            <input type="text" id="custom_unmatched" placeholder="Non-standard field key for LLM fallback testing">
+          </div>
+
+        </div>
+      </div>
+    </form>
+
+    <!-- LIVE STATE MONITOR -->
+    <div class="card">
+      <h2>Live Native Event Dispatcher Monitor</h2>
+      <p style="font-size: 13px; color: #64748b; margin-top: -6px;">Simulates React / Vue state listeners responding to native `input` and `change` events.</p>
+      <div id="state-log" class="state-monitor">
+        [State Monitor] Listening for native input & change events on form fields...
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Live Event Dispatch Monitor Script
+    const logContainer = document.getElementById('state-log');
+    const inputs = document.querySelectorAll('input, textarea, select');
+
+    function logEvent(e) {
+      const time = new Date().toLocaleTimeString();
+      const line = document.createElement('div');
+      const val = e.target.type === 'password' ? '********' : e.target.value;
+      line.textContent = `[${time}] EVT: '${e.type}' | Field: '${e.target.id || e.target.name}' -> Value: "${val}"`;
+      logContainer.appendChild(line);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    inputs.forEach(el => {
+      el.addEventListener('input', logEvent);
+      el.addEventListener('change', logEvent);
+    });
+  </script>
+</body>
+</html>
