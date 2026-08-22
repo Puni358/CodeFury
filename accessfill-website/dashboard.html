@@ -155,47 +155,19 @@
         </button>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
-        <div class="lg:col-span-2 flex flex-col gap-5">
-          <h3 class="font-headline-md text-headline-md text-on-surface">Recent Activity</h3>
-          <div class="bg-surface rounded-2xl border-2 border-border-soft p-7 flex flex-col gap-7 shadow-card">
-
-            <div class="flex items-start gap-5 pb-7 border-b-2 border-border-soft">
-              <div class="min-w-14 w-14 h-14 rounded-2xl bg-consent-container flex items-center justify-center border-2 border-consent-container">
-                <span class="material-symbols-outlined text-on-consent-container text-[28px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
-              </div>
-              <div class="flex-1 pt-1">
-                <p class="font-body-lg text-body-lg text-on-surface font-semibold">Passport Renewal Application</p>
-                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Submitted successfully on Oct 24, 2023</p>
-              </div>
-              <span class="material-symbols-outlined text-on-surface-variant text-[28px] opacity-50">chevron_right</span>
-            </div>
-
-            <div class="flex items-start gap-5">
-              <div class="min-w-14 w-14 h-14 rounded-2xl bg-info-container flex items-center justify-center border-2 border-info-container">
-                <span class="material-symbols-outlined text-on-info-container text-[28px]" style="font-variation-settings: 'FILL' 0;">schedule</span>
-              </div>
-              <div class="flex-1 pt-1">
-                <p class="font-body-lg text-body-lg text-on-surface font-semibold">Voter ID Registration</p>
-                <p class="font-body-md text-body-md text-on-surface-variant mt-1">Saved as draft on Oct 20, 2023</p>
-              </div>
-              <span class="material-symbols-outlined text-on-surface-variant text-[28px] opacity-50">chevron_right</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-5">
-          <h3 class="font-headline-md text-headline-md text-on-surface">Need Help?</h3>
-          <div class="bg-surface rounded-2xl border-[3px] border-consent p-8 flex flex-col items-center text-center gap-5 shadow-card h-full justify-center relative overflow-hidden">
-            <div class="w-18 h-18 bg-consent-container rounded-2xl flex items-center justify-center p-5 border-2 border-consent-container">
-              <span class="material-symbols-outlined text-[44px] text-on-consent-container" style="font-variation-settings: 'FILL' 1;">support_agent</span>
+      <div class="flex flex-col gap-5">
+        <h3 class="font-headline-md text-headline-md text-on-surface">Need Help?</h3>
+        <div class="bg-surface rounded-2xl border-[3px] border-consent p-8 flex flex-col md:flex-row items-center text-center md:text-left gap-6 shadow-card justify-between relative overflow-hidden">
+          <div class="flex flex-col md:flex-row items-center gap-6">
+            <div class="w-16 h-16 shrink-0 bg-consent-container rounded-2xl flex items-center justify-center p-4 border-2 border-consent-container">
+              <span class="material-symbols-outlined text-[36px] text-on-consent-container" style="font-variation-settings: 'FILL' 1;">support_agent</span>
             </div>
             <p class="font-body-lg text-body-lg text-on-surface">Our support team is available 24/7 to assist you.</p>
-            <button class="mt-3 w-full min-h-touch-target bg-consent hover:bg-consent/90 focus:shadow-focus-ring text-on-consent transition-colors rounded-xl px-6 py-4 flex items-center justify-center gap-3 font-label-md text-label-md shadow-card focus:outline-none">
-              <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">chat</span>
-              Contact Support
-            </button>
           </div>
+          <button class="w-full md:w-auto shrink-0 min-h-touch-target bg-consent hover:bg-consent/90 focus:shadow-focus-ring text-on-consent transition-colors rounded-xl px-8 py-4 flex items-center justify-center gap-3 font-label-md text-label-md shadow-card focus:outline-none">
+            <span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 0;">chat</span>
+            Contact Support
+          </button>
         </div>
       </div>
 
