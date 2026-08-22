@@ -3,3 +3,6 @@ verify_jwt = true
 
 [functions.explain-form-field]
 verify_jwt = true
+
+[functions.text-to-speech]
+verify_jwt = true

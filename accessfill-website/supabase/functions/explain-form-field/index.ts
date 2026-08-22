@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       `Explain in one simple sentence, in ${langName}, what a form field labeled '${labelForPrompt}' is likely asking for. Keep it under 25 words, no jargon.`;
 
     const geminiUrl =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" +
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=" +
       encodeURIComponent(geminiKey);
 
     const geminiRes = await fetch(geminiUrl, {

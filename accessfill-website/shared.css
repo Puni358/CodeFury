@@ -253,3 +253,7 @@ html[data-contrast="extra-high"] .bg-consent { background-color: #1B5038 !import
   font-weight: 600;
   cursor: pointer;
 }
+.af-explain-speak:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}

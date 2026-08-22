@@ -79,6 +79,7 @@
       explain: "Explain",
       explainAria: "Explain this field",
       readAloud: "Read aloud",
+      generating: "Generating voice…",
       close: "Close",
       loading: "Getting a simple explanation…",
       voiceMissingKn: "Voice not available for Kannada on this device — showing text only",
@@ -90,6 +91,7 @@
       explain: "ವಿವರಿಸಿ",
       explainAria: "ಈ ಕ್ಷೇತ್ರವನ್ನು ವಿವರಿಸಿ",
       readAloud: "ಗಟ್ಟಿಯಾಗಿ ಓದಿ",
+      generating: "ಧ್ವನಿ ತಯಾರಾಗುತ್ತಿದೆ…",
       close: "ಮುಚ್ಚಿ",
       loading: "ಸರಳ ವಿವರಣೆ ತರಲಾಗುತ್ತಿದೆ…",
       voiceMissingKn: "ಈ ಸಾಧನದಲ್ಲಿ ಕನ್ನಡ ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ — ಪಠ್ಯ ಮಾತ್ರ ತೋರಿಸಲಾಗುತ್ತಿದೆ",
@@ -100,9 +102,12 @@
   };
 
   const geminiCache = Object.create(null);
+  const ttsCache = Object.create(null);
   let popoverEl = null;
   let activeBtn = null;
   let voicesReady = false;
+  let geminiAudio = null;
+  let geminiAudioUrl = null;
 
   function prefsLang() {
     const raw = (window.AF && window.AF.readPrefs && window.AF.readPrefs().language) || 'en';
@@ -194,7 +199,46 @@
     }) || null;
   }
 
-  async function speakText(text, lang, noteEl) {
+  function stopGeminiAudio() {
+    if (geminiAudio) {
+      try {
+        geminiAudio.pause();
+        geminiAudio.removeAttribute('src');
+        geminiAudio.load();
+      } catch (_) {}
+    }
+    if (geminiAudioUrl) {
+      URL.revokeObjectURL(geminiAudioUrl);
+      geminiAudioUrl = null;
+    }
+  }
+
+  function b64ToBlob(b64, mime) {
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mime || 'audio/wav' });
+  }
+
+  function playAudioBlob(blob) {
+    stopGeminiAudio();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    geminiAudioUrl = URL.createObjectURL(blob);
+    if (!geminiAudio) geminiAudio = new Audio();
+    geminiAudio.src = geminiAudioUrl;
+    const play = geminiAudio.play();
+    if (play && typeof play.catch === 'function') play.catch(function () {});
+  }
+
+  function setSpeakBusy(busy) {
+    const btn = document.getElementById('af-explain-speak');
+    if (!btn) return;
+    const label = btn.querySelector('[data-af-speak-label]');
+    btn.disabled = !!busy;
+    if (label) label.textContent = busy ? ui().generating : ui().readAloud;
+  }
+
+  async function speakViaBrowser(text, lang, noteEl) {
     if (!window.speechSynthesis) {
       if (noteEl) {
         noteEl.hidden = false;
@@ -236,6 +280,45 @@
         noteEl.textContent = 'Voice not available on this device — showing text only';
       }
     }
+  }
+
+  async function speakText(text, lang, noteEl) {
+    const clipped = String(text || '').trim();
+    if (!clipped) return;
+    stopGeminiAudio();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+
+    const cacheKey = lang + '::' + clipped;
+    const cached = ttsCache[cacheKey];
+    if (cached && cached.b64) {
+      playAudioBlob(b64ToBlob(cached.b64, cached.mime));
+      return;
+    }
+
+    const sb = window.AccessFillSupabase;
+    if (sb && typeof sb.invokeTextToSpeech === 'function') {
+      setSpeakBusy(true);
+      try {
+        const result = await sb.invokeTextToSpeech({ text: clipped, language: lang });
+        if (result && result.success && result.audioBase64) {
+          ttsCache[cacheKey] = { b64: result.audioBase64, mime: result.mimeType || 'audio/wav' };
+          playAudioBlob(b64ToBlob(result.audioBase64, result.mimeType));
+          setSpeakBusy(false);
+          return;
+        }
+        console.log('[AccessFill TTS] gemini unavailable, using browser voice', {
+          error: result && result.error,
+          demo: result && result.demo
+        });
+      } catch (err) {
+        if (sb.sanitizeLogPayload) {
+          console.error('[AccessFill TTS] playback failed', sb.sanitizeLogPayload(err));
+        }
+      }
+      setSpeakBusy(false);
+    }
+
+    await speakViaBrowser(clipped, lang, noteEl);
   }
 
   async function getExplanation(key, label) {
@@ -330,7 +413,9 @@
 
   function closePopover() {
     if (!popoverEl) return;
+    stopGeminiAudio();
     if (window.speechSynthesis) speechSynthesis.cancel();
+    setSpeakBusy(false);
     popoverEl.hidden = true;
     if (activeBtn) {
       activeBtn.setAttribute('aria-expanded', 'false');

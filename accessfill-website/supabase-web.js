@@ -680,6 +680,43 @@
       }
     }
 
+    /**
+     * Gemini neural TTS via Edge Function.
+     * Sends explanation text + language only — never form field VALUES.
+     */
+    async invokeTextToSpeech({ text, language }) {
+      const lang = language === 'kn' ? 'kn' : 'en';
+      const clipped = String(text || '').trim().slice(0, 800);
+      console.log("[AccessFill TTS] invoke", { language: lang, text_len: clipped.length });
+      if (!clipped) return { success: false, error: 'empty_text' };
+      if (!this.isLiveSession()) {
+        return { success: false, demo: true, error: 'tts_skipped_demo' };
+      }
+      try {
+        const res = await fetch(SUPABASE_CONFIG.url + '/functions/v1/text-to-speech', {
+          method: 'POST',
+          headers: this._authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ text: clipped, language: lang })
+        });
+        const data = await res.json().catch(() => null);
+        const b64 = data && (data.audio_base64 || data.audioBase64);
+        if (!res.ok || !b64) {
+          console.error("[AccessFill TTS] failed", { status: res.status, error: data && data.error });
+          if (data) console.error("[AccessFill TTS] error object:", sanitizeLogPayload(data));
+          return { success: false, error: (data && data.error) || formatApiError(data, res.status) };
+        }
+        console.log("[AccessFill TTS] ok", { language: lang, mime: data.mime_type || data.mimeType });
+        return {
+          success: true,
+          audioBase64: b64,
+          mimeType: data.mime_type || data.mimeType || 'audio/wav'
+        };
+      } catch (err) {
+        console.error("[AccessFill TTS] network error:", sanitizeLogPayload(err));
+        return { success: false, error: err.message };
+      }
+    }
+
     async insertUploadedDocument({ documentType, storagePath, extractedFields, confirmed }) {
       if (!this.isLiveSession()) {
         const row = {
