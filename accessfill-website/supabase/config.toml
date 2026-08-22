@@ -1,0 +1,2 @@
+[functions.extract-id-document]
+verify_jwt = true

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>My Saved Info — AccessFill</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      theme: {
+        extend: {
+          "colors": {
+            "background": "#FAF8F3", "surface": "#FFFFFF", "surface-low": "#FDFBF6",
+            "surface-container": "#FFFBF4", "surface-container-high": "#F5F1E8",
+            "on-surface": "#1F2937", "on-surface-variant": "#4B5563",
+            "outline": "#9CA3AF", "outline-variant": "#D6D3CB", "border-soft": "#E5E1D8",
+            "primary": "#1A4D6B", "on-primary": "#FFFFFF", "primary-container": "#D6E6EE",
+            "on-primary-container": "#0B2C42", "surface-tint": "#236389",
+            "destructive": "#8B2635", "on-destructive": "#FFFFFF",
+            "destructive-container": "#F5D9DE", "on-destructive-container": "#5C1420",
+            "consent": "#2D6A4F", "on-consent": "#FFFFFF", "consent-container": "#D4E7DB",
+            "on-consent-container": "#183B2A",
+            "info-container": "#E6E0D3", "on-info-container": "#3B3325"
+          },
+          "borderRadius": { "DEFAULT": "8px", "xl": "16px", "2xl": "20px", "full": "9999px" },
+          "spacing": { "gutter": "28px", "touch-target": "56px", "margin-desktop": "72px", "max-width": "1200px" },
+          "fontFamily": {
+            "body-lg": ["Atkinson Hyperlegible Next"], "headline-md": ["Atkinson Hyperlegible Next"],
+            "body-md": ["Atkinson Hyperlegible Next"], "headline-lg": ["Atkinson Hyperlegible Next"],
+            "label-md": ["Atkinson Hyperlegible Next"]
+          },
+          "fontSize": {
+            "body-lg": ["22px", {"lineHeight": "36px", "fontWeight": "500"}],
+            "headline-md": ["30px", {"lineHeight": "40px", "fontWeight": "700"}],
+            "body-md": ["20px", {"lineHeight": "32px", "fontWeight": "500"}],
+            "headline-lg": ["44px", {"lineHeight": "56px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "label-md": ["18px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "600"}]
+          },
+          "boxShadow": {
+            "card": "0 1px 2px rgba(31,41,55,0.04), 0 0 0 2px #E5E1D8",
+            "focus-ring": "0 0 0 4px rgba(26,77,107,0.25)"
+          }
+        }
+      }
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="shared.css" rel="stylesheet"/>
+</head>
+<body class="bg-background font-body-md text-on-surface min-h-screen antialiased flex flex-col">
+
+<div id="af-header" data-page="savedInfo"></div>
+
+<main class="w-full pt-24 pb-margin-desktop flex-1">
+  <div class="max-w-max-width mx-auto px-gutter">
+    <div class="mb-8">
+      <h1 class="font-headline-lg text-headline-lg text-on-surface mb-4">My Saved Info</h1>
+      <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl">
+        These details are stored in your AccessFill profile and used to fill forms. Sensitive IDs are saved separately.
+      </p>
+    </div>
+
+    <div id="demo-save-note" class="hidden mb-8 rounded-2xl border-2 border-on-info-container/20 bg-info-container p-6 flex items-start gap-4" role="status">
+      <span class="material-symbols-outlined text-on-info-container text-[32px]" style="font-variation-settings: 'FILL' 1;">science</span>
+      <p class="font-label-md text-label-md text-on-info-container">Demo mode — changes aren't saved permanently. They only update this browser’s mock profile.</p>
+    </div>
+
+    <div id="save-ok" class="hidden mb-8 rounded-2xl border-2 border-consent bg-consent-container p-6 flex items-center gap-5 shadow-card" role="status" aria-live="polite">
+      <span class="material-symbols-outlined text-on-consent-container text-[32px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+      <p class="font-label-md text-label-md text-on-consent-container" id="save-ok-text">Saved!</p>
+    </div>
+
+    <div id="save-err" class="hidden mb-8 rounded-2xl border-2 border-destructive/40 bg-destructive-container p-6 flex items-start gap-5" role="alert" aria-live="assertive">
+      <span class="material-symbols-outlined text-on-destructive-container text-[32px]" style="font-variation-settings: 'FILL' 1;">error</span>
+      <p class="font-label-md text-label-md text-on-destructive-container" id="save-err-text"></p>
+    </div>
+
+    <form id="profile-form" class="flex flex-col gap-8" novalidate>
+      <section class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+        <h2 class="font-headline-md text-headline-md text-on-surface">General information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex flex-col gap-2 md:col-span-2">
+            <label for="edit-full-name" class="font-label-md text-label-md">Full name</label>
+            <input id="edit-full-name" name="full_name" type="text" autocomplete="name" required
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-email" class="font-label-md text-label-md">Email</label>
+            <input id="edit-email" name="email" type="email" autocomplete="email"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-phone" class="font-label-md text-label-md">Phone (10 digits)</label>
+            <input id="edit-phone" name="phone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+            <p id="err-phone" class="hidden text-[16px] text-destructive">Phone must be exactly 10 digits.</p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-dob" class="font-label-md text-label-md">Date of birth</label>
+            <input id="edit-dob" name="date_of_birth" type="date"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+            <p id="err-dob" class="hidden text-[16px] text-destructive">Date of birth cannot be in the future.</p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-language" class="font-label-md text-label-md">Preferred language</label>
+            <select id="edit-language" name="preferred_language"
+                    class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring">
+              <option value="en">English</option>
+              <option value="hi">हिंदी (Hindi)</option>
+              <option value="kn">ಕನ್ನಡ (Kannada)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+        <h2 class="font-headline-md text-headline-md text-on-surface">Address</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex flex-col gap-2 md:col-span-2">
+            <label for="edit-address1" class="font-label-md text-label-md">Address line 1</label>
+            <input id="edit-address1" name="address_line1" type="text" autocomplete="address-line1"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+          <div class="flex flex-col gap-2 md:col-span-2">
+            <label for="edit-address2" class="font-label-md text-label-md">Address line 2</label>
+            <input id="edit-address2" name="address_line2" type="text" autocomplete="address-line2"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-city" class="font-label-md text-label-md">City</label>
+            <input id="edit-city" name="city" type="text" autocomplete="address-level2"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-state" class="font-label-md text-label-md">State</label>
+            <input id="edit-state" name="state" type="text" autocomplete="address-level1"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-zip" class="font-label-md text-label-md">PIN / Zip</label>
+            <input id="edit-zip" name="zip" type="text" autocomplete="postal-code"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+        <h2 class="font-headline-md text-headline-md text-on-surface">Emergency contact</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex flex-col gap-2">
+            <label for="edit-emergency-name" class="font-label-md text-label-md">Name</label>
+            <input id="edit-emergency-name" name="emergency_contact_name" type="text"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-emergency-phone" class="font-label-md text-label-md">Phone (10 digits)</label>
+            <input id="edit-emergency-phone" name="emergency_contact_phone" type="tel" inputmode="numeric" maxlength="10"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+            <p id="err-emergency-phone" class="hidden text-[16px] text-destructive">Emergency phone must be exactly 10 digits.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-surface rounded-2xl border-2 border-border-soft p-8 flex flex-col gap-6 shadow-card">
+        <h2 class="font-headline-md text-headline-md text-on-surface">Sensitive IDs</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant">Stored in a separate table. Values are never written to the console.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex flex-col gap-2">
+            <label for="edit-aadhaar" class="font-label-md text-label-md">Aadhaar (12 digits)</label>
+            <input id="edit-aadhaar" name="aadhaar_number" type="text" inputmode="numeric" maxlength="12" autocomplete="off"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+            <p id="err-aadhaar" class="hidden text-[16px] text-destructive">Aadhaar number must be exactly 12 digits.</p>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="edit-pan" class="font-label-md text-label-md">PAN (ABCDE1234F)</label>
+            <input id="edit-pan" name="pan_number" type="text" maxlength="10" autocomplete="off"
+                   class="min-h-touch-target w-full rounded-xl border-2 border-outline-variant bg-surface-low px-5 py-4 font-body-md text-body-md uppercase focus:border-primary focus:outline-none focus:shadow-focus-ring"/>
+            <p id="err-pan" class="hidden text-[16px] text-destructive">PAN must be 10 characters: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="flex justify-end">
+        <button type="submit" id="save-profile-btn"
+                class="min-h-touch-target rounded-2xl bg-primary hover:bg-surface-tint text-on-primary px-10 py-4 font-label-md text-label-md shadow-card focus:outline-none focus:shadow-focus-ring">
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<div id="af-footer"></div>
+
+<script src="supabase-web.js"></script>
+<script src="shared.js"></script>
+<script>
+  (async function pageInit() {
+    if (await window.AF.guardAuth('savedInfo')) return;
+    window.AF.renderHeader('savedInfo');
+    window.AF.renderFooter();
+
+    const sb = window.AccessFillSupabase;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const dobInput = document.getElementById('edit-dob');
+    dobInput.max = todayStr;
+
+    if (sb.isDemoMode) document.getElementById('demo-save-note').classList.remove('hidden');
+
+    const phoneInput = document.getElementById('edit-phone');
+    const emPhoneInput = document.getElementById('edit-emergency-phone');
+    const aadhaarInput = document.getElementById('edit-aadhaar');
+    const panInput = document.getElementById('edit-pan');
+
+    function digits(el, n) {
+      el.addEventListener('input', () => { el.value = el.value.replace(/\D/g, '').slice(0, n); });
+    }
+    digits(phoneInput, 10);
+    digits(emPhoneInput, 10);
+    digits(aadhaarInput, 12);
+    panInput.addEventListener('input', () => {
+      panInput.value = panInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    });
+
+    function toggleErr(id, show) {
+      document.getElementById(id).classList.toggle('hidden', !show);
+    }
+    function validatePhone(input, errId) {
+      const v = input.value.trim();
+      const ok = v.length === 0 || v.length === 10;
+      toggleErr(errId, !ok);
+      return ok;
+    }
+    function validateAadhaar() {
+      const v = aadhaarInput.value.trim();
+      const ok = v.length === 0 || v.length === 12;
+      toggleErr('err-aadhaar', !ok);
+      return ok;
+    }
+    function validatePan() {
+      const v = panInput.value.trim();
+      const ok = v.length === 0 || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(v);
+      toggleErr('err-pan', !ok);
+      return ok;
+    }
+    function validateDob() {
+      const v = dobInput.value;
+      const ok = !v || v <= todayStr;
+      toggleErr('err-dob', !ok);
+      return ok;
+    }
+
+    phoneInput.addEventListener('blur', () => validatePhone(phoneInput, 'err-phone'));
+    emPhoneInput.addEventListener('blur', () => validatePhone(emPhoneInput, 'err-emergency-phone'));
+    aadhaarInput.addEventListener('blur', validateAadhaar);
+    panInput.addEventListener('blur', validatePan);
+    dobInput.addEventListener('blur', validateDob);
+
+    function fillForm(prof) {
+      const p = prof || {};
+      document.getElementById('edit-full-name').value = p.full_name || '';
+      document.getElementById('edit-email').value = p.email || '';
+      phoneInput.value = String(p.phone || '').replace(/\D/g, '').slice(0, 10);
+      const dob = p.date_of_birth ? String(p.date_of_birth).slice(0, 10) : '';
+      dobInput.value = dob;
+      document.getElementById('edit-language').value = p.preferred_language || 'en';
+      document.getElementById('edit-address1').value = p.address_line1 || '';
+      document.getElementById('edit-address2').value = p.address_line2 || '';
+      document.getElementById('edit-city').value = p.city || '';
+      document.getElementById('edit-state').value = p.state || '';
+      document.getElementById('edit-zip').value = p.zip || '';
+      document.getElementById('edit-emergency-name').value = p.emergency_contact_name || '';
+      emPhoneInput.value = String(p.emergency_contact_phone || '').replace(/\D/g, '').slice(0, 10);
+      aadhaarInput.value = String(p.aadhaar_number || '').replace(/\D/g, '').slice(0, 12);
+      panInput.value = String(p.pan_number || '').toUpperCase();
+    }
+
+    try {
+      const profile = await sb.fetchFullUserProfileRLS();
+      fillForm(profile);
+      console.log('[AccessFill Profile] form prefilled', { keys: Object.keys(profile || {}) });
+    } catch (err) {
+      console.error('[AccessFill Profile] load failed', sb.sanitizeLogPayload(err));
+      document.getElementById('save-err-text').textContent = (err && err.message) || 'Could not load saved profile.';
+      document.getElementById('save-err').classList.remove('hidden');
+    }
+
+    document.getElementById('profile-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      document.getElementById('save-ok').classList.add('hidden');
+      document.getElementById('save-err').classList.add('hidden');
+
+      const valid = validatePhone(phoneInput, 'err-phone')
+        && validatePhone(emPhoneInput, 'err-emergency-phone')
+        && validateAadhaar()
+        && validatePan()
+        && validateDob();
+      if (!valid) {
+        document.getElementById('save-err-text').textContent = 'Please fix the validation errors before saving.';
+        document.getElementById('save-err').classList.remove('hidden');
+        return;
+      }
+
+      const formData = {
+        full_name: document.getElementById('edit-full-name').value.trim(),
+        email: document.getElementById('edit-email').value.trim(),
+        phone: phoneInput.value.trim(),
+        date_of_birth: dobInput.value || null,
+        preferred_language: document.getElementById('edit-language').value,
+        address_line1: document.getElementById('edit-address1').value.trim(),
+        address_line2: document.getElementById('edit-address2').value.trim(),
+        city: document.getElementById('edit-city').value.trim(),
+        state: document.getElementById('edit-state').value.trim(),
+        zip: document.getElementById('edit-zip').value.trim(),
+        emergency_contact_name: document.getElementById('edit-emergency-name').value.trim(),
+        emergency_contact_phone: emPhoneInput.value.trim(),
+        aadhaar_number: aadhaarInput.value.trim(),
+        pan_number: panInput.value.trim()
+      };
+
+      const btn = document.getElementById('save-profile-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving…';
+
+      const result = await sb.saveFullUserProfileRLS(formData);
+      if (!result.success) {
+        console.error('[AccessFill Profile] save failed', sb.sanitizeLogPayload(result));
+        document.getElementById('save-err-text').textContent = result.error || 'Save failed.';
+        document.getElementById('save-err').classList.remove('hidden');
+        btn.disabled = false;
+        btn.textContent = 'Save';
+        return;
+      }
+
+      const verified = await sb.fetchFullUserProfileRLS();
+      fillForm(verified);
+      console.log('[AccessFill Profile] save ok, refilled from persist', { keys: Object.keys(verified || {}) });
+
+      const ok = document.getElementById('save-ok');
+      document.getElementById('save-ok-text').textContent = sb.isDemoMode
+        ? 'Saved! (demo — this browser only)'
+        : 'Saved!';
+      ok.classList.remove('hidden');
+      btn.disabled = false;
+      btn.textContent = 'Save';
+    });
+  })();
+</script>
+</body>
+</html>

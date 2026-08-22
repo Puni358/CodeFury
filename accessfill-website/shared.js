@@ -16,6 +16,8 @@
     onboarding:  'onboarding.html',
     dashboard:   'dashboard.html',
     settings:    'settings.html',
+    savedInfo:   'saved-info.html',
+    uploadDocs:  'upload-documents.html',
     voiceFlow:   'voice-guidance.html',
   };
 
@@ -240,8 +242,8 @@
     const displayName = (sb() && sb().getDisplayName && sb().getDisplayName()) || session.name || 'Guest';
     const demo = isDemoMode();
     const pageClass = (k) => pageKey === k
-      ? 'min-h-touch-target min-w-[120px] flex items-center justify-center px-6 rounded-xl text-primary font-bold bg-primary-container'
-      : 'text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors min-h-touch-target min-w-[120px] flex items-center justify-center px-6 rounded-xl';
+      ? 'min-h-touch-target min-w-[96px] flex items-center justify-center px-4 rounded-xl text-primary font-bold bg-primary-container'
+      : 'text-label-md font-label-md text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors min-h-touch-target min-w-[96px] flex items-center justify-center px-4 rounded-xl';
 
     const demoBadge = demo
       ? `<span class="af-demo-badge inline-flex items-center gap-1.5 rounded-full border-2 border-on-info-container/20 bg-info-container px-3 py-1 text-[12px] font-bold tracking-wide text-on-info-container uppercase">Demo mode</span>`
@@ -262,8 +264,10 @@
       </a>
       ${demoBadge}
     </div>
-    <nav class="hidden md:flex items-center gap-4">
+    <nav class="hidden md:flex items-center gap-2">
       <a class="${pageClass('dashboard')}"  href="${url('dashboard')}">Dashboard</a>
+      <a class="${pageClass('savedInfo')}" href="${url('savedInfo')}">Saved Info</a>
+      <a class="${pageClass('uploadDocs')}" href="${url('uploadDocs')}">Upload</a>
       <a class="${pageClass('voiceFlow')}" href="${url('voiceFlow')}">Voice Fill</a>
       <a class="${pageClass('settings')}"   href="${url('settings')}">Settings</a>
     </nav>

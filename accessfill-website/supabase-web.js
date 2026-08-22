@@ -29,16 +29,38 @@
     !SUPABASE_CONFIG.anonKey.includes("...")
   );
 
+  const SENSITIVE_LOG_KEYS = [
+    'aadhaar_number', 'pan_number', 'phone', 'emergency_contact_phone',
+    'full_name', 'date_of_birth', 'address', 'address_line1', 'address_line2',
+    'email', 'storage_path'
+  ];
+
   function sanitizeLogPayload(data) {
-    if (!data || typeof data !== 'object') return data;
-    const sensitiveKeys = ['aadhaar_number', 'pan_number', 'phone', 'emergency_contact_phone'];
-    const sanitized = { ...data };
-    for (const key of Object.keys(sanitized)) {
-      if (sensitiveKeys.includes(key) && sanitized[key]) {
+    if (data == null) return data;
+    if (Array.isArray(data)) return data.map(sanitizeLogPayload);
+    if (typeof data !== 'object') return data;
+    if (data instanceof Error) {
+      return { name: data.name, message: data.message };
+    }
+    const sanitized = {};
+    for (const key of Object.keys(data)) {
+      if (SENSITIVE_LOG_KEYS.includes(key) && data[key]) {
         sanitized[key] = '[REDACTED_PII]';
+      } else if (data[key] && typeof data[key] === 'object') {
+        sanitized[key] = sanitizeLogPayload(data[key]);
+      } else {
+        sanitized[key] = data[key];
       }
     }
     return sanitized;
+  }
+
+  function formatApiError(data, status) {
+    if (!data || typeof data !== 'object') return 'HTTP ' + status;
+    const parts = [data.message, data.error, data.hint, data.details, data.code, data.msg, data.error_description]
+      .filter(Boolean);
+    const text = parts.join(' — ');
+    return text ? (status ? `HTTP ${status}: ${text}` : text) : ('HTTP ' + status);
   }
 
   const DEFAULT_MOCK_PROFILE = {
@@ -411,19 +433,20 @@
         });
 
         const res1Data = await res1.json().catch(() => null);
-        console.log("[AccessFill Upsert Response] profiles table HTTP " + res1.status + " (fields omitted)");
+        console.log("[AccessFill Upsert Response] profiles table HTTP " + res1.status + " keys:",
+          res1Data && typeof res1Data === 'object' ? Object.keys(Array.isArray(res1Data) ? (res1Data[0] || {}) : res1Data) : []);
 
         if (res1.ok) {
           profileOk = true;
         } else {
-          console.error("[AccessFill Upsert Error] profiles table failed (status " + res1.status + ")");
+          console.error("[AccessFill Upsert Error] profiles table failed:", sanitizeLogPayload(res1Data));
           return {
             success: false,
-            error: `Profiles table error (${res1.status}): ${res1Data && (res1Data.message || res1Data.hint) || 'RLS check or schema error'}`
+            error: `Profiles table error: ${formatApiError(res1Data, res1.status)}`
           };
         }
       } catch (err1) {
-        console.error("[AccessFill Network Error] profiles table upsert failed");
+        console.error("[AccessFill Network Error] profiles table upsert failed:", sanitizeLogPayload(err1));
         return { success: false, error: `Profiles network error: ${err1.message}` };
       }
 
@@ -440,19 +463,20 @@
         });
 
         const res2Data = await res2.json().catch(() => null);
-        console.log("[AccessFill Upsert Response] sensitive_ids table HTTP " + res2.status + " (fields omitted)");
+        console.log("[AccessFill Upsert Response] sensitive_ids table HTTP " + res2.status + " keys:",
+          res2Data && typeof res2Data === 'object' ? Object.keys(Array.isArray(res2Data) ? (res2Data[0] || {}) : res2Data) : []);
 
         if (res2.ok) {
           sensitiveOk = true;
         } else {
-          console.error("[AccessFill Upsert Error] sensitive_ids table failed (status " + res2.status + ")");
+          console.error("[AccessFill Upsert Error] sensitive_ids table failed:", sanitizeLogPayload(res2Data));
           return {
             success: false,
-            error: `Sensitive IDs table error (${res2.status}): ${res2Data && (res2Data.message || res2Data.hint) || 'RLS check or schema error'}`
+            error: `Sensitive IDs table error: ${formatApiError(res2Data, res2.status)}`
           };
         }
       } catch (err2) {
-        console.error("[AccessFill Network Error] sensitive_ids table upsert failed");
+        console.error("[AccessFill Network Error] sensitive_ids table upsert failed:", sanitizeLogPayload(err2));
         return { success: false, error: `Sensitive IDs network error: ${err2.message}` };
       }
 
@@ -511,8 +535,210 @@
       }
       return value;
     }
+
+    isLiveSession() {
+      return !this.isDemoMode && isLiveConfigured && this.session && this.session.access_token &&
+        String(this.session.access_token).indexOf('mock-') !== 0;
+    }
+
+    getUserId() {
+      return this.session && this.session.user && this.session.user.id;
+    }
+
+    _authHeaders(extra) {
+      return Object.assign({
+        'apikey': SUPABASE_CONFIG.anonKey,
+        'Authorization': 'Bearer ' + this.session.access_token
+      }, extra || {});
+    }
+
+    emptyExtractedFields() {
+      return {
+        document_type: null,
+        full_name: null,
+        date_of_birth: null,
+        aadhaar_number: null,
+        pan_number: null,
+        address: null,
+        address_line1: null
+      };
+    }
+
+    overlayNonEmpty(existing, patch) {
+      const out = Object.assign({}, existing || {});
+      Object.keys(patch || {}).forEach((key) => {
+        const v = patch[key];
+        if (v != null && String(v).trim() !== '') out[key] = v;
+      });
+      return out;
+    }
+
+    /**
+     * Upload to private bucket `id-documents`.
+     * Path MUST be `${auth.uid()}/${filename}` for Storage RLS.
+     */
+    async uploadIdDocument(file) {
+      if (!this.isLiveSession()) {
+        console.log("[AccessFill Storage] skip upload (demo or no live session)");
+        return { success: false, demo: true, error: "Demo mode — files are not uploaded to Storage." };
+      }
+      const userId = this.getUserId();
+      const original = (file && file.name) ? file.name : 'document.jpg';
+      const safeName = original.replace(/[^\w.\-]+/g, '_').replace(/^\.+/, '') || 'document.jpg';
+      const storagePath = userId + '/' + Date.now() + '-' + safeName;
+      const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/');
+
+      console.log("[AccessFill Storage] upload start", { bucket: 'id-documents', pathShape: '<user_id>/<filename>' });
+
+      try {
+        const res = await fetch(SUPABASE_CONFIG.url + '/storage/v1/object/id-documents/' + encodedPath, {
+          method: 'POST',
+          headers: this._authHeaders({
+            'Content-Type': (file && file.type) || 'application/octet-stream',
+            'x-upsert': 'false'
+          }),
+          body: file
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          console.error("[AccessFill Storage] upload failed", { status: res.status, keys: data && Object.keys(data) });
+          console.error("[AccessFill Storage] upload error object:", sanitizeLogPayload(data));
+          return { success: false, error: formatApiError(data, res.status) };
+        }
+        console.log("[AccessFill Storage] upload ok");
+        return { success: true, storagePath: storagePath };
+      } catch (err) {
+        console.error("[AccessFill Storage] upload network error:", sanitizeLogPayload(err));
+        return { success: false, error: err.message || 'Network error uploading document.' };
+      }
+    }
+
+    async invokeExtractIdDocument(storagePath) {
+      if (!this.isLiveSession()) {
+        console.log("[AccessFill Extract] skip (demo)");
+        return { success: false, demo: true, fields: this.emptyExtractedFields(), error: 'extract_skipped_demo' };
+      }
+      console.log("[AccessFill Extract] invoking extract-id-document");
+      try {
+        const res = await fetch(SUPABASE_CONFIG.url + '/functions/v1/extract-id-document', {
+          method: 'POST',
+          headers: this._authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ storage_path: storagePath })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data || !data.success) {
+          console.error("[AccessFill Extract] failed", {
+            status: res.status,
+            keys: data && data.fields ? Object.keys(data.fields) : [],
+            error: data && data.error
+          });
+          if (data) console.error("[AccessFill Extract] error object:", sanitizeLogPayload(data));
+          return {
+            success: false,
+            fields: this.emptyExtractedFields(),
+            error: (data && data.error) || formatApiError(data, res.status)
+          };
+        }
+        const keysFound = Object.keys(data.fields || {}).filter((k) => data.fields[k] != null && data.fields[k] !== '');
+        console.log("[AccessFill Extract] ok", { keysFound: keysFound });
+        return { success: true, fields: Object.assign(this.emptyExtractedFields(), data.fields || {}) };
+      } catch (err) {
+        console.error("[AccessFill Extract] network error:", sanitizeLogPayload(err));
+        return { success: false, fields: this.emptyExtractedFields(), error: err.message };
+      }
+    }
+
+    async insertUploadedDocument({ documentType, storagePath, extractedFields, confirmed }) {
+      if (!this.isLiveSession()) {
+        const row = {
+          id: 'demo-doc-' + Date.now(),
+          user_id: this.getUserId(),
+          document_type: documentType || 'other',
+          storage_path: storagePath || 'demo/local',
+          extracted_fields: extractedFields || {},
+          confirmed: !!confirmed
+        };
+        try {
+          const list = JSON.parse(localStorage.getItem('af_demo_uploaded_documents') || '[]');
+          list.push(row);
+          localStorage.setItem('af_demo_uploaded_documents', JSON.stringify(list));
+        } catch (_) {}
+        console.log("[AccessFill Documents] demo insert only (local)", { keys: Object.keys(extractedFields || {}) });
+        return { success: true, demo: true, row: row };
+      }
+
+      const payload = {
+        user_id: this.getUserId(),
+        document_type: documentType || 'other',
+        storage_path: storagePath,
+        extracted_fields: extractedFields || {},
+        confirmed: !!confirmed
+      };
+      console.log("[AccessFill Documents] insert uploaded_documents", { keys: Object.keys(extractedFields || {}) });
+
+      try {
+        const res = await fetch(SUPABASE_CONFIG.url + '/rest/v1/uploaded_documents', {
+          method: 'POST',
+          headers: this._authHeaders({
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          }),
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          console.error("[AccessFill Documents] insert failed:", sanitizeLogPayload(data));
+          return { success: false, error: formatApiError(data, res.status) };
+        }
+        const row = Array.isArray(data) ? data[0] : data;
+        console.log("[AccessFill Documents] insert ok", { hasId: !!(row && row.id) });
+        return { success: true, row: row };
+      } catch (err) {
+        console.error("[AccessFill Documents] insert network error:", sanitizeLogPayload(err));
+        return { success: false, error: err.message };
+      }
+    }
+
+    async confirmUploadedDocument(id, extractedFields) {
+      if (!this.isLiveSession()) {
+        try {
+          const list = JSON.parse(localStorage.getItem('af_demo_uploaded_documents') || '[]');
+          const next = list.map((r) => r.id === id ? Object.assign({}, r, { confirmed: true, extracted_fields: extractedFields }) : r);
+          localStorage.setItem('af_demo_uploaded_documents', JSON.stringify(next));
+        } catch (_) {}
+        console.log("[AccessFill Documents] demo confirm only (local)");
+        return { success: true, demo: true };
+      }
+
+      console.log("[AccessFill Documents] confirm uploaded_documents");
+      try {
+        const res = await fetch(SUPABASE_CONFIG.url + '/rest/v1/uploaded_documents?id=eq.' + encodeURIComponent(id), {
+          method: 'PATCH',
+          headers: this._authHeaders({
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          }),
+          body: JSON.stringify({
+            confirmed: true,
+            extracted_fields: extractedFields,
+            updated_at: new Date().toISOString()
+          })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) {
+          console.error("[AccessFill Documents] confirm failed:", sanitizeLogPayload(data));
+          return { success: false, error: formatApiError(data, res.status) };
+        }
+        console.log("[AccessFill Documents] confirm ok");
+        return { success: true, row: Array.isArray(data) ? data[0] : data };
+      } catch (err) {
+        console.error("[AccessFill Documents] confirm network error:", sanitizeLogPayload(err));
+        return { success: false, error: err.message };
+      }
+    }
   }
 
   global.AccessFillSupabase = new SupabaseClientAdapter();
+  global.AccessFillSupabase.sanitizeLogPayload = sanitizeLogPayload;
   global.AccessFillSupabaseConfig = SUPABASE_CONFIG;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
