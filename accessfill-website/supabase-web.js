@@ -123,6 +123,79 @@
     };
   }
 
+  function normalizeIsoDate(val) {
+    if (val == null) return null;
+    if (typeof val !== 'string') val = String(val);
+    val = val.trim();
+    if (!val || val === 'null' || val === 'undefined') return null;
+
+    // Already YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+      const [y, m, d] = val.split('-').map(Number);
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31) return val;
+    }
+
+    // ISO timestamp format e.g. YYYY-MM-DDTHH:mm:ss.sssZ
+    if (/^\d{4}-\d{2}-\d{2}T/.test(val)) {
+      const part = val.slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(part)) return part;
+    }
+
+    // YYYY/MM/DD format
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(val)) {
+      const [y, m, d] = val.split('/').map(Number);
+      if (m >= 1 && m <= 12 && d >= 1 && d <= 31) {
+        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
+    }
+
+    // Match DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY or MM/DD/YYYY or DD/MM/YY
+    const dmyMatch = val.match(/^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})$/);
+    if (dmyMatch) {
+      let p1 = parseInt(dmyMatch[1], 10);
+      let p2 = parseInt(dmyMatch[2], 10);
+      let year = parseInt(dmyMatch[3], 10);
+      if (year < 100) {
+        year += (year > 30 ? 1900 : 2000);
+      }
+      let day, month;
+
+      if (p1 > 12) {
+        // p1 is day (DD/MM/YYYY)
+        day = p1;
+        month = p2;
+      } else if (p2 > 12) {
+        // p2 is day (MM/DD/YYYY)
+        month = p1;
+        day = p2;
+      } else {
+        // Both <= 12: default to DD/MM/YYYY (Indian standard format)
+        day = p1;
+        month = p2;
+      }
+
+      if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+        const mm = String(month).padStart(2, '0');
+        const dd = String(day).padStart(2, '0');
+        return `${year}-${mm}-${dd}`;
+      }
+    }
+
+    // Try standard JS Date parse (e.g. "27 Nov 2005" or "November 27, 2005")
+    const parsed = new Date(val);
+    if (!isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getDate()).padStart(2, '0');
+      if (year >= 1900 && year <= 2100) {
+        return `${year}-${month}-${day}`;
+      }
+    }
+
+    return null;
+  }
+
+
   const DEFAULT_MOCK_PROFILE = {
     user_id: "demo-user-123",
     full_name: "Aarav Sharma",
@@ -427,7 +500,7 @@
         full_name: profileRow.full_name || (this.session && this.session.user && this.session.user.user_metadata && this.session.user.user_metadata.full_name) || '',
         email: profileRow.email || (this.session && this.session.user && this.session.user.email) || '',
         phone: profileRow.phone || '',
-        date_of_birth: profileRow.date_of_birth || '',
+        date_of_birth: profileRow.date_of_birth ? (normalizeIsoDate(profileRow.date_of_birth) || profileRow.date_of_birth) : '',
         address_line1: profileRow.address_line1 || '',
         address_line2: profileRow.address_line2 || '',
         city: profileRow.city || '',
@@ -449,7 +522,8 @@
     async saveFullUserProfileRLS(formData) {
       if (this.isDemoMode || !isLiveConfigured || !this.session || !this.session.access_token ||
           String(this.session.access_token).indexOf('mock-') === 0) {
-        this.profile = { ...this.profile, ...formData, isDemo: this.isDemoMode };
+        const normDob = formData.date_of_birth !== undefined ? normalizeIsoDate(formData.date_of_birth) : (this.profile && this.profile.date_of_birth);
+        this.profile = { ...this.profile, ...formData, date_of_birth: normDob || '', isDemo: this.isDemoMode };
         this._persist();
         return { success: true, profile: this.profile };
       }
@@ -458,18 +532,18 @@
 
       const profilePayload = {
         user_id: userId,
-        full_name: formData.full_name || '',
-        email: formData.email || this.session.user.email || '',
-        phone: formData.phone || '',
-        date_of_birth: formData.date_of_birth || null,
-        address_line1: formData.address_line1 || '',
-        address_line2: formData.address_line2 || '',
-        city: formData.city || '',
-        state: formData.state || '',
-        zip: formData.zip || '',
-        preferred_language: formData.preferred_language || 'en',
-        emergency_contact_name: formData.emergency_contact_name || '',
-        emergency_contact_phone: formData.emergency_contact_phone || ''
+        full_name: formData.full_name !== undefined ? formData.full_name : (this.profile && this.profile.full_name || ''),
+        email: formData.email !== undefined ? formData.email : (this.profile && this.profile.email || (this.session && this.session.user && this.session.user.email) || ''),
+        phone: formData.phone !== undefined ? formData.phone : (this.profile && this.profile.phone || ''),
+        date_of_birth: normalizeIsoDate(formData.date_of_birth !== undefined ? formData.date_of_birth : (this.profile && this.profile.date_of_birth)),
+        address_line1: formData.address_line1 !== undefined ? formData.address_line1 : (this.profile && this.profile.address_line1 || ''),
+        address_line2: formData.address_line2 !== undefined ? formData.address_line2 : (this.profile && this.profile.address_line2 || ''),
+        city: formData.city !== undefined ? formData.city : (this.profile && this.profile.city || ''),
+        state: formData.state !== undefined ? formData.state : (this.profile && this.profile.state || ''),
+        zip: formData.zip !== undefined ? formData.zip : (this.profile && this.profile.zip || ''),
+        preferred_language: formData.preferred_language !== undefined ? formData.preferred_language : (this.profile && this.profile.preferred_language || 'en'),
+        emergency_contact_name: formData.emergency_contact_name !== undefined ? formData.emergency_contact_name : (this.profile && this.profile.emergency_contact_name || ''),
+        emergency_contact_phone: formData.emergency_contact_phone !== undefined ? formData.emergency_contact_phone : (this.profile && this.profile.emergency_contact_phone || '')
       };
 
       const sensitivePayload = {
@@ -898,6 +972,10 @@
         'apikey': SUPABASE_CONFIG.anonKey,
         'Authorization': 'Bearer ' + this.session.access_token
       }, extra || {});
+    }
+
+    normalizeIsoDate(val) {
+      return normalizeIsoDate(val);
     }
 
     emptyExtractedFields() {

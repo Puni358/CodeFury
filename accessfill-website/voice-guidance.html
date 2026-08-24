@@ -575,6 +575,8 @@
         const low = val.toLowerCase();
         if (low.includes('kannada') || low.includes('ಕನ್ನಡ') || low.includes('kn')) val = 'kn';
         else val = 'en';
+      } else if (type === 'date') {
+        val = (sb && sb.normalizeIsoDate) ? (sb.normalizeIsoDate(val) || val) : val;
       }
       return val;
     }

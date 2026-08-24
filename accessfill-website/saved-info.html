@@ -247,7 +247,7 @@
       return ok;
     }
     function validateDob() {
-      const v = dobInput.value;
+      const v = dobInput.value ? (sb.normalizeIsoDate(dobInput.value) || dobInput.value) : '';
       const ok = !v || v <= todayStr;
       toggleErr('err-dob', !ok);
       return ok;
@@ -264,7 +264,7 @@
       document.getElementById('edit-full-name').value = p.full_name || '';
       document.getElementById('edit-email').value = p.email || '';
       phoneInput.value = String(p.phone || '').replace(/\D/g, '').slice(0, 10);
-      const dob = p.date_of_birth ? String(p.date_of_birth).slice(0, 10) : '';
+      const dob = p.date_of_birth ? (sb.normalizeIsoDate(p.date_of_birth) || String(p.date_of_birth).slice(0, 10)) : '';
       dobInput.value = dob;
       const prefLang = p.preferred_language === 'kn' ? 'kn' : 'en';
       document.getElementById('edit-language').value = prefLang;

@@ -189,7 +189,7 @@
         ? f.document_type : 'other';
       document.getElementById('rev-document-type').value = dtype;
       document.getElementById('rev-full-name').value = f.full_name || '';
-      document.getElementById('rev-dob').value = f.date_of_birth || '';
+      document.getElementById('rev-dob').value = f.date_of_birth ? (sb.normalizeIsoDate(f.date_of_birth) || f.date_of_birth) : '';
       aadhaarRaw = String(f.aadhaar_number || '').replace(/\D/g, '');
       aadhaarVisible = false;
       document.getElementById('btn-show-aadhaar').textContent = 'Show';
@@ -201,10 +201,11 @@
     function readReviewed() {
       const aadhaarField = document.getElementById('rev-aadhaar').value.trim();
       const aadhaar = aadhaarVisible ? aadhaarField.replace(/\D/g, '') : (aadhaarRaw || aadhaarField.replace(/\D/g, ''));
+      const rawDob = document.getElementById('rev-dob').value.trim();
       return {
         document_type: document.getElementById('rev-document-type').value,
         full_name: document.getElementById('rev-full-name').value.trim(),
-        date_of_birth: document.getElementById('rev-dob').value.trim(),
+        date_of_birth: sb.normalizeIsoDate(rawDob) || rawDob,
         aadhaar_number: aadhaar,
         pan_number: document.getElementById('rev-pan').value.trim().toUpperCase(),
         address: document.getElementById('rev-address').value.trim(),

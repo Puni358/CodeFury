@@ -22,6 +22,41 @@ function stripFences(text: string): string {
   return text.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
 }
 
+function normalizeIsoDate(val: unknown): string | null {
+  if (val == null) return null;
+  const str = String(val).trim();
+  if (!str || str === 'null' || str === 'undefined') return null;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}-\d{2}T/.test(str)) return str.slice(0, 10);
+
+  const dmyMatch = str.match(/^(\d{1,2})[\/\.-](\d{1,2})[\/\.-](\d{2,4})$/);
+  if (dmyMatch) {
+    let p1 = parseInt(dmyMatch[1], 10);
+    let p2 = parseInt(dmyMatch[2], 10);
+    let year = parseInt(dmyMatch[3], 10);
+    if (year < 100) year += (year > 30 ? 1900 : 2000);
+    let day: number, month: number;
+    if (p1 > 12) { day = p1; month = p2; }
+    else if (p2 > 12) { month = p1; day = p2; }
+    else { day = p1; month = p2; }
+
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    if (y >= 1900 && y <= 2100) return `${y}-${m}-${d}`;
+  }
+
+  return null;
+}
+
 function logStatus(msg: string, extra: Record<string, unknown> = {}) {
   console.log(JSON.stringify({ msg, ...extra }));
 }
@@ -115,7 +150,7 @@ Deno.serve(async (req) => {
     const fields = {
       document_type: parsed.document_type ?? null,
       full_name: parsed.full_name ?? null,
-      date_of_birth: parsed.date_of_birth ?? null,
+      date_of_birth: normalizeIsoDate(parsed.date_of_birth),
       aadhaar_number: parsed.aadhaar_number ?? null,
       pan_number: parsed.pan_number ?? null,
       address: parsed.address ?? null,
